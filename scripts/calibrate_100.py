@@ -1,3 +1,4 @@
+# ruff: noqa: E501
 """100-scenario calibration harness.
 
 Categories:
@@ -15,7 +16,6 @@ FAIL = harness-expected verdict ≠ pipeline verdict → a real bug (or a wrong 
 from __future__ import annotations
 
 import json
-import shutil
 import sys
 import tempfile
 import textwrap
@@ -25,9 +25,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "src"))
 
-from biodrift.models import Verdict, Capability, Phase, AdmissionStatus  # noqa: E402
-from biodrift.models.contracts import Contract, CapabilityRule, PhaseRule  # noqa: E402
 from biodrift.contract.manager import save_contract  # noqa: E402
+from biodrift.models import AdmissionStatus, Capability, Verdict  # noqa: E402
+from biodrift.models.contracts import CapabilityRule, Contract  # noqa: E402
 from biodrift.pipeline import run_verification  # noqa: E402
 
 # ── helpers ──────────────────────────────────────────────────────────────────
@@ -715,7 +715,7 @@ def run_one(id_: str, src: dict, contract_rules, expected: Verdict) -> dict:
 
 def main():
     results = []
-    for i, (id_, src, ctr, exp) in enumerate(ALL):
+    for _, (id_, src, ctr, exp) in enumerate(ALL):
         results.append(run_one(id_, src, ctr, exp))
 
     hits = sum(r["pass"] for r in results)

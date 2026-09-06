@@ -38,7 +38,9 @@ class CoverageConfig(BaseModel):
 
 class DecisionConfig(BaseModel):
     min_attribution_confidence: float = 0.6
-    min_coverage: float = 0.8  # ponytail: calibrated — must sit above the mandatory-import floor (1/N). 0.5 admits a 2-cap contract's import-only state (cov=0.50).
+    # ponytail: calibrated — must sit above the mandatory-import floor (1/N).
+    # 0.5 would admit a 2-cap contract's import-only state (cov=0.50).
+    min_coverage: float = 0.8
     conflict_tolerance: float = 0.0
 
 

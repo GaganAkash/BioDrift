@@ -78,6 +78,18 @@ class TestDecision:
         assert result.verdict == Verdict.INCONCLUSIVE
         assert "coverage" in result.reason.lower()
 
+    def test_inconclusive_reason_names_unobserved_capability(self):
+        result = decide(
+            events=[],
+            contract_rules={},
+            coverage_ratio=0.5,
+            attribution_confidence=0.9,
+            coverage_missing=["file_write", "file_delete"],
+        )
+        assert result.verdict == Verdict.INCONCLUSIVE
+        assert "file_write" in result.reason
+        assert "file_delete" in result.reason
+
     def test_compliant_when_sufficient(self):
         events = [_make_event()]
         result = decide(

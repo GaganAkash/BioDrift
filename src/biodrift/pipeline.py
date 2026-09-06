@@ -108,6 +108,7 @@ def run_verification(
             attribution_confidence=_compute_attribution(all_events, pkg_path),
             min_coverage=cfg.decision.min_coverage,
             min_attribution_confidence=cfg.decision.min_attribution_confidence,
+            coverage_missing=_uncovered_capabilities(all_events, contract),
         )
     run_meta.final_verdict = decision.verdict
 
@@ -227,6 +228,28 @@ def _compute_coverage_ratio(events, contract) -> float:
     observed = {evt.capability.value for evt in events}
     covered = expected & observed
     return len(covered) / len(expected)
+
+
+def _uncovered_capabilities(events, contract) -> list[str]:
+    """Governed-but-unobserved capabilities, in a stable order.
+
+    Lets the INCONCLUSIVE reason say *which* governed capability a workload
+    never exercised, so an operator can tell a mis-scoped contract from an
+    evasion that hides behind an unexercised capability.
+    """
+    if contract is None:
+        return []
+    expected = {
+        rule.capability.value
+        for rule in contract.capability_rules
+        if not rule.blocked
+    }
+    for phase_rule in contract.phase_rules:
+        for cr in phase_rule.capability_rules:
+            if not cr.blocked:
+                expected.add(cr.capability.value)
+    observed = {evt.capability.value for evt in events}
+    return sorted(expected - observed)
 
 
 def _compute_attribution(events, package_dir=None) -> float:

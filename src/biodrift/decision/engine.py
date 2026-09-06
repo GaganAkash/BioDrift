@@ -26,6 +26,7 @@ def decide(
     min_coverage: float = 0.8,
     min_attribution_confidence: float = 0.6,
     conflict_count: int = 0,
+    coverage_missing: list[str] | None = None,
 ) -> Decision:
     """Emit COMPLIANT, VIOLATION, or INCONCLUSIVE with evidence.
 
@@ -64,9 +65,14 @@ def decide(
         )
 
     if coverage_ratio < min_coverage:
+        missing = coverage_missing or []
+        detail = f"; never observed: {', '.join(missing)}" if missing else ""
         return Decision(
             verdict=Verdict.INCONCLUSIVE,
-            reason=f"Insufficient coverage: {coverage_ratio:.2%} < {min_coverage:.2%}",
+            reason=(
+                f"Insufficient coverage: {coverage_ratio:.2%} < "
+                f"{min_coverage:.2%}{detail}"
+            ),
             findings=[],
             coverage_ratio=coverage_ratio,
             attribution_confidence=attribution_confidence,

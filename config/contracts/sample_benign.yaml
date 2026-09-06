@@ -1,4 +1,4 @@
-"""Sample contract for testing."""
+documented: "Sample contract for testing."
 
 package_id: "sample-benign-pkg"
 version_family: "1.x"
