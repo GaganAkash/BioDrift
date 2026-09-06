@@ -1,0 +1,15 @@
+observers:
+  python_audit:
+    enabled: true
+    options: {}
+  process:
+    enabled: true
+    options: {}
+  ptrace:
+    enabled: false
+    options:
+      platform_gate: linux
+  ebpf:
+    enabled: false
+    options:
+      platform_gate: linux

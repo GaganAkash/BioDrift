@@ -1,0 +1,31 @@
+package_id: "fixture-quiet"
+version_family: "1.x"
+environment:
+  os: "linux"
+  python_versions: ["3.10", "3.11", "3.12"]
+  architecture: "*"
+phase_rules:
+  - phase: "execution"
+    allowed_capabilities: ["file_read", "file_write", "module_load", "network_connect"]
+    coverage_required: true
+capability_rules:
+  - capability: "file_read"
+    allowed_resources: ["/tmp/*"]
+    allowed_destinations: []
+    allowed_actions: ["open", "read"]
+    blocked: false
+    severity: "low"
+  - capability: "network_connect"
+    allowed_resources: []
+    allowed_destinations: ["127.0.0.1:*"]
+    allowed_actions: ["connect"]
+    blocked: false
+    severity: "high"
+coverage_threshold: 0.8
+provenance:
+  source_url: "https://example.com/fixture-quiet"
+  source_hash: "sha256:local-fixture"
+  created_by: "benchmark"
+  verified_by: ["benchmark"]
+  admitted_by: "benchmark"
+admission_status: "admitted"

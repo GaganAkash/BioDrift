@@ -1,0 +1,38 @@
+package_id: "sample-contextual-abuse-pkg"
+version_family: "1.x"
+environment:
+  os: "linux"
+  python_versions: ["3.10", "3.11", "3.12"]
+  architecture: "x86_64"
+phase_rules:
+  - phase: "execution"
+    allowed_capabilities: ["file_read"]
+    capability_rules: []
+    coverage_required: true
+capability_rules:
+  - capability: "file_read"
+    allowed_resources: ["/tmp/*"]
+    allowed_destinations: []
+    allowed_actions: ["open", "read"]
+    blocked: false
+    severity: "low"
+  - capability: "file_write"
+    allowed_resources: ["/tmp/*"]
+    allowed_destinations: []
+    allowed_actions: ["write"]
+    blocked: false
+    severity: "medium"
+resource_rules:
+  - "/tmp/*"
+destination_rules:
+  - "127.0.0.1:*"
+attribution_requirements:
+  min_confidence: 0.6
+  require_lineage: true
+coverage_threshold: 0.8
+provenance:
+  source_url: "https://example.com/sample-contextual-abuse-pkg"
+  source_hash: "sha256:placeholder"
+  created_by: "test"
+  verified_by: ["test"]
+admission_status: "admitted"

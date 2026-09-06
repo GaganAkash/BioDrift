@@ -1,0 +1,102 @@
+[
+  {
+    "id": "write-and-read-tmp",
+    "expected": "COMPLIANT",
+    "got": "COMPLIANT",
+    "events": 4,
+    "coverage": 1.0,
+    "reason": "No violations; coverage and attribution sufficient",
+    "duration_s": 0.17,
+    "pass": true
+  },
+  {
+    "id": "write-wrong-dir",
+    "expected": "VIOLATION",
+    "got": "VIOLATION",
+    "events": 3,
+    "coverage": 0.67,
+    "reason": "1 violation(s) found",
+    "duration_s": 0.14,
+    "pass": true
+  },
+  {
+    "id": "read-tmp-covered",
+    "expected": "COMPLIANT",
+    "got": "COMPLIANT",
+    "events": 4,
+    "coverage": 1.0,
+    "reason": "No violations; coverage and attribution sufficient",
+    "duration_s": 0.17,
+    "pass": true
+  },
+  {
+    "id": "read-etc-violation",
+    "expected": "VIOLATION",
+    "got": "VIOLATION",
+    "events": 3,
+    "coverage": 1.0,
+    "reason": "1 violation(s) found",
+    "duration_s": 0.18,
+    "pass": true
+  },
+  {
+    "id": "read-etc-module-phase",
+    "expected": "VIOLATION",
+    "got": "VIOLATION",
+    "events": 3,
+    "coverage": 1.0,
+    "reason": "1 violation(s) found",
+    "duration_s": 0.16,
+    "pass": true
+  },
+  {
+    "id": "boom-main",
+    "expected": "INCONCLUSIVE",
+    "got": "INCONCLUSIVE",
+    "events": 2,
+    "coverage": 0.5,
+    "reason": "Candidate workload failed (exit code 1); observed behavior may be incomplete",
+    "duration_s": 0.18,
+    "pass": true
+  },
+  {
+    "id": "hidden-module",
+    "expected": "VIOLATION",
+    "got": "VIOLATION",
+    "events": 5,
+    "coverage": 1.0,
+    "reason": "1 violation(s) found",
+    "duration_s": 0.17,
+    "pass": true
+  },
+  {
+    "id": "init-only",
+    "expected": "VIOLATION",
+    "got": "VIOLATION",
+    "events": 3,
+    "coverage": 1.0,
+    "reason": "1 violation(s) found",
+    "duration_s": 0.15,
+    "pass": true
+  },
+  {
+    "id": "mixed-write-read",
+    "expected": "VIOLATION",
+    "got": "VIOLATION",
+    "events": 4,
+    "coverage": 1.0,
+    "reason": "1 violation(s) found",
+    "duration_s": 0.15,
+    "pass": true
+  },
+  {
+    "id": "write-tmp-ungoverned-lowcov",
+    "expected": "INCONCLUSIVE",
+    "got": "INCONCLUSIVE",
+    "events": 3,
+    "coverage": 0.5,
+    "reason": "Insufficient coverage: 50.00% < 80.00%",
+    "duration_s": 0.16,
+    "pass": true
+  }
+]

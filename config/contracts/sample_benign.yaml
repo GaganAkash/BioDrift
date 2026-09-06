@@ -1,0 +1,58 @@
+"""Sample contract for testing."""
+
+package_id: "sample-benign-pkg"
+version_family: "1.x"
+environment:
+  os: "linux"
+  python_versions: ["3.10", "3.11", "3.12"]
+  architecture: "x86_64"
+phase_rules:
+  - phase: "execution"
+    allowed_capabilities: ["file_read", "module_load"]
+    capability_rules: []
+    coverage_required: true
+  - phase: "import"
+    allowed_capabilities: ["module_load"]
+    capability_rules: []
+    coverage_required: false
+capability_rules:
+  - capability: "file_read"
+    allowed_resources: ["/tmp/*", "/var/tmp/*"]
+    allowed_destinations: []
+    allowed_actions: ["open", "read"]
+    blocked: false
+    severity: "low"
+  - capability: "file_write"
+    allowed_resources: ["/tmp/*"]
+    allowed_destinations: []
+    allowed_actions: ["write"]
+    blocked: false
+    severity: "medium"
+  - capability: "network_connect"
+    allowed_resources: []
+    allowed_destinations: ["127.0.0.1:*", "10.0.0.0/8:*"]
+    allowed_actions: ["connect"]
+    blocked: false
+    severity: "high"
+  - capability: "process_spawn"
+    allowed_resources: ["/usr/bin/*", "/usr/local/bin/*"]
+    allowed_destinations: []
+    allowed_actions: ["spawn"]
+    blocked: false
+    severity: "high"
+resource_rules:
+  - "/tmp/*"
+  - "/var/tmp/*"
+destination_rules:
+  - "127.0.0.1:*"
+  - "10.0.0.0/8:*"
+attribution_requirements:
+  min_confidence: 0.6
+  require_lineage: true
+coverage_threshold: 0.8
+provenance:
+  source_url: "https://example.com/sample-benign-pkg"
+  source_hash: "sha256:placeholder"
+  created_by: "test"
+  verified_by: ["test"]
+admission_status: "admitted"

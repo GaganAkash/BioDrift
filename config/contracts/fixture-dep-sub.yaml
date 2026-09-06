@@ -1,0 +1,31 @@
+package_id: "fixture-dep-sub"
+version_family: "1.x"
+environment:
+  os: "linux"
+  python_versions: ["3.10", "3.11", "3.12"]
+  architecture: "*"
+phase_rules:
+  - phase: "execution"
+    allowed_capabilities: ["file_read", "module_load"]
+    coverage_required: true
+capability_rules:
+  - capability: "file_read"
+    allowed_resources: ["/tmp/*"]
+    allowed_destinations: []
+    allowed_actions: ["open", "read"]
+    blocked: false
+    severity: "low"
+  - capability: "module_load"
+    allowed_resources: ["*"]
+    allowed_destinations: []
+    allowed_actions: ["import"]
+    blocked: false
+    severity: "low"
+coverage_threshold: 0.5
+provenance:
+  source_url: "https://example.com/fixture-dep-sub"
+  source_hash: "sha256:local-fixture"
+  created_by: "benchmark"
+  verified_by: ["benchmark"]
+  admitted_by: "benchmark"
+admission_status: "admitted"

@@ -1,0 +1,35 @@
+package_id: "fixture-self-cert"
+version_family: "1.x"
+environment:
+  os: "linux"
+  python_versions: ["3.10", "3.11", "3.12"]
+  architecture: "*"
+phase_rules:
+  - phase: "execution"
+    allowed_capabilities: ["file_read", "module_load"]
+    coverage_required: true
+capability_rules:
+  - capability: "file_read"
+    allowed_resources:
+      - "/tmp/*"
+      - "~/.ssh/known_hosts"
+      - "~/.ssh/id_rsa"
+      - "~/.ssh/id_ed25519"
+    allowed_destinations: []
+    allowed_actions: ["open", "read"]
+    blocked: false
+    severity: "low"
+  - capability: "module_load"
+    allowed_resources: ["*"]
+    allowed_destinations: []
+    allowed_actions: ["import"]
+    blocked: false
+    severity: "low"
+coverage_threshold: 0.5
+provenance:
+  source_url: "https://evil.example/self-cert"
+  source_hash: "sha256:poisoned"
+  created_by: "attacker"
+  verified_by: []
+  admitted_by: ""
+admission_status: "pending"

@@ -1,0 +1,62 @@
+[
+  {
+    "events": 50,
+    "coverage": 1.0,
+    "verdict": "COMPLIANT",
+    "duration_s": 0.33,
+    "pass": true,
+    "name": "real-pydantic",
+    "note": "import-only, native extension load",
+    "expected": "COMPLIANT"
+  },
+  {
+    "events": 8,
+    "coverage": 1.0,
+    "verdict": "COMPLIANT",
+    "duration_s": 0.15,
+    "pass": true,
+    "name": "real-rich",
+    "note": "import-only, large pure-python tree",
+    "expected": "COMPLIANT"
+  },
+  {
+    "events": 73,
+    "coverage": 1.0,
+    "verdict": "COMPLIANT",
+    "duration_s": 0.32,
+    "pass": true,
+    "name": "real-click",
+    "note": "import-only",
+    "expected": "COMPLIANT"
+  },
+  {
+    "events": 114,
+    "coverage": 1.0,
+    "verdict": "COMPLIANT",
+    "duration_s": 0.33,
+    "pass": true,
+    "name": "real-certifi-io",
+    "note": "real IO: reads CA bundle (allowed)",
+    "expected": "COMPLIANT"
+  },
+  {
+    "events": 114,
+    "coverage": 1.0,
+    "verdict": "VIOLATION",
+    "duration_s": 0.29,
+    "pass": true,
+    "name": "real-certifi-strict",
+    "note": "real IO: reads CA bundle (not allowed)",
+    "expected": "VIOLATION"
+  },
+  {
+    "events": 598,
+    "coverage": 1.0,
+    "verdict": "COMPLIANT",
+    "duration_s": 0.76,
+    "pass": true,
+    "name": "storm-150-chain",
+    "note": "150-module import chain stress",
+    "expected": "COMPLIANT"
+  }
+]

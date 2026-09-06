@@ -1,0 +1,1007 @@
+{
+  "total": 100,
+  "pass": 100,
+  "fail": 0,
+  "results": [
+    {
+      "id": "A01_modload_only",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 2,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.147,
+      "pass": true
+    },
+    {
+      "id": "A02_fread_tmp",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.119,
+      "pass": true
+    },
+    {
+      "id": "A03_fwrite_tmp",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.124,
+      "pass": true
+    },
+    {
+      "id": "A04_net_connect",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 23,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.174,
+      "pass": true
+    },
+    {
+      "id": "A05_fread_etc_allowed",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.118,
+      "pass": true
+    },
+    {
+      "id": "A06_fwrite_tmp_multi",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.142,
+      "pass": true
+    },
+    {
+      "id": "A07_proc_exec",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 35,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.167,
+      "pass": true
+    },
+    {
+      "id": "A08_env_read",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.0,
+      "reason": "Insufficient coverage: 0.00% < 80.00%",
+      "time_s": 0.118,
+      "pass": true
+    },
+    {
+      "id": "A09_fread_etc_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.117,
+      "pass": true
+    },
+    {
+      "id": "A10_fwrite_etc_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.118,
+      "pass": true
+    },
+    {
+      "id": "A11_net_connect_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 23,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.482,
+      "pass": true
+    },
+    {
+      "id": "A12_proc_exec_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 35,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.731,
+      "pass": true
+    },
+    {
+      "id": "A13_fread_slash_violation",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.119,
+      "pass": true
+    },
+    {
+      "id": "A14_fwrite_slash_violation",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.154,
+      "pass": true
+    },
+    {
+      "id": "A15_fread_root_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.116,
+      "pass": true
+    },
+    {
+      "id": "A16_net_connect_multi_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 24,
+      "cov": 1.0,
+      "reason": "2 violation(s) found",
+      "time_s": 0.135,
+      "pass": true
+    },
+    {
+      "id": "B01_n1_full",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 2,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.105,
+      "pass": true
+    },
+    {
+      "id": "B02_n1_gov_not_exercised",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.0,
+      "reason": "Insufficient coverage: 0.00% < 80.00%",
+      "time_s": 0.124,
+      "pass": true
+    },
+    {
+      "id": "B03_n1_gov_exercised",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.123,
+      "pass": true
+    },
+    {
+      "id": "B04_n1_violation_beats_coverage",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.132,
+      "pass": true
+    },
+    {
+      "id": "B05_n1_gov_only_import",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.0,
+      "reason": "Insufficient coverage: 0.00% < 80.00%",
+      "time_s": 0.148,
+      "pass": true
+    },
+    {
+      "id": "B06_n2_none",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.0,
+      "reason": "Insufficient coverage: 0.00% < 80.00%",
+      "time_s": 0.161,
+      "pass": true
+    },
+    {
+      "id": "B07_n2_one_cap",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 3,
+      "cov": 0.5,
+      "reason": "Insufficient coverage: 50.00% < 80.00%",
+      "time_s": 0.124,
+      "pass": true
+    },
+    {
+      "id": "B08_n2_both_caps",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.141,
+      "pass": true
+    },
+    {
+      "id": "B09_n2_one_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 4,
+      "cov": 0.5,
+      "reason": "1 violation(s) found",
+      "time_s": 0.127,
+      "pass": true
+    },
+    {
+      "id": "B10_n2_only_modload",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.5,
+      "reason": "Insufficient coverage: 50.00% < 80.00%",
+      "time_s": 0.118,
+      "pass": true
+    },
+    {
+      "id": "B11_n3_full",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.123,
+      "pass": true
+    },
+    {
+      "id": "B12_n3_two_of_three",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.113,
+      "pass": true
+    },
+    {
+      "id": "B13_n5_partial",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 4,
+      "cov": 0.6,
+      "reason": "Insufficient coverage: 60.00% < 80.00%",
+      "time_s": 0.111,
+      "pass": true
+    },
+    {
+      "id": "B14_n5_four_of_five",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 37,
+      "cov": 0.8,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.156,
+      "pass": true
+    },
+    {
+      "id": "B15_n5_five_of_five",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 48,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.155,
+      "pass": true
+    },
+    {
+      "id": "C01_no_contract",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.0,
+      "reason": "No governing contract; cannot verify without a trusted reference",
+      "time_s": 0.104,
+      "pass": true
+    },
+    {
+      "id": "C02_empty_contract",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.107,
+      "pass": true
+    },
+    {
+      "id": "C03_quarantine",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 1.0,
+      "reason": "Contract quarantined: package-shipped contract is untrusted (self-certification / reference poisoning)",
+      "time_s": 0.116,
+      "pass": true
+    },
+    {
+      "id": "C04_inert_with_rules",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.0,
+      "reason": "Insufficient coverage: 0.00% < 80.00%",
+      "time_s": 0.108,
+      "pass": true
+    },
+    {
+      "id": "C05_inert_n5",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.2,
+      "reason": "Insufficient coverage: 20.00% < 80.00%",
+      "time_s": 0.111,
+      "pass": true
+    },
+    {
+      "id": "C06_inert_n1",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.0,
+      "reason": "Insufficient coverage: 0.00% < 80.00%",
+      "time_s": 0.112,
+      "pass": true
+    },
+    {
+      "id": "C07_deny_only",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.113,
+      "pass": true
+    },
+    {
+      "id": "C08_empty_deny_allow",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.119,
+      "pass": true
+    },
+    {
+      "id": "C09_crash",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 1.0,
+      "reason": "Candidate workload failed (exit code 42); observed behavior may be incomplete",
+      "time_s": 0.108,
+      "pass": true
+    },
+    {
+      "id": "C10_rapid_imports",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 12,
+      "cov": 0.5,
+      "reason": "Insufficient coverage: 50.00% < 80.00%",
+      "time_s": 0.164,
+      "pass": true
+    },
+    {
+      "id": "C11_empty_src",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.5,
+      "reason": "Insufficient coverage: 50.00% < 80.00%",
+      "time_s": 0.132,
+      "pass": true
+    },
+    {
+      "id": "C12_binary_payload",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 12,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.132,
+      "pass": true
+    },
+    {
+      "id": "C13_no_pyproject",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.0,
+      "reason": "No governing contract; cannot verify without a trusted reference",
+      "time_s": 0.118,
+      "pass": true
+    },
+    {
+      "id": "C14_long_path",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.127,
+      "pass": true
+    },
+    {
+      "id": "D01_interleave_c_v",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.132,
+      "pass": true
+    },
+    {
+      "id": "D02_interleave_v_c",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.146,
+      "pass": true
+    },
+    {
+      "id": "D03_many_violations",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.131,
+      "pass": true
+    },
+    {
+      "id": "D04_no_violation_many_compliant",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.128,
+      "pass": true
+    },
+    {
+      "id": "D05_violation_last_line",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 5,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.131,
+      "pass": true
+    },
+    {
+      "id": "D06_same_violation_100x",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.116,
+      "pass": true
+    },
+    {
+      "id": "D07_same_violation_1x",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.126,
+      "pass": true
+    },
+    {
+      "id": "D08_crash_first_line",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 2,
+      "cov": 0.5,
+      "reason": "Candidate workload failed (exit code 1); observed behavior may be incomplete",
+      "time_s": 0.129,
+      "pass": true
+    },
+    {
+      "id": "D09_crash_after_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.133,
+      "pass": true
+    },
+    {
+      "id": "D10_crash_in_import",
+      "expected": "INCONCLUSIVE",
+      "got": "INCONCLUSIVE",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "Candidate workload failed (exit code 1); observed behavior may be incomplete",
+      "time_s": 0.116,
+      "pass": true
+    },
+    {
+      "id": "D11_multi_mod_good",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 8,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.124,
+      "pass": true
+    },
+    {
+      "id": "D12_multi_mod_bad",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 10,
+      "cov": 1.0,
+      "reason": "2 violation(s) found",
+      "time_s": 0.126,
+      "pass": true
+    },
+    {
+      "id": "D13_multi_mod_mixed",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 15,
+      "cov": 1.0,
+      "reason": "2 violation(s) found",
+      "time_s": 0.123,
+      "pass": true
+    },
+    {
+      "id": "D14_multi_mod_only_bad_imported",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 12,
+      "cov": 1.0,
+      "reason": "2 violation(s) found",
+      "time_s": 0.12,
+      "pass": true
+    },
+    {
+      "id": "D15_multi_mod_all_good",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 17,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.132,
+      "pass": true
+    },
+    {
+      "id": "D16_loop_read",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 5,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.114,
+      "pass": true
+    },
+    {
+      "id": "D17_loop_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.108,
+      "pass": true
+    },
+    {
+      "id": "D18_conditional_read",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.12,
+      "pass": true
+    },
+    {
+      "id": "D19_try_except",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.112,
+      "pass": true
+    },
+    {
+      "id": "D20_lambda_captured",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.107,
+      "pass": true
+    },
+    {
+      "id": "D21_dynamic_path_allowed",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.113,
+      "pass": true
+    },
+    {
+      "id": "D22_dynamic_path_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.112,
+      "pass": true
+    },
+    {
+      "id": "D23_fstring_path",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.107,
+      "pass": true
+    },
+    {
+      "id": "D24_concat_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.118,
+      "pass": true
+    },
+    {
+      "id": "D25_pathlib_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.121,
+      "pass": true
+    },
+    {
+      "id": "E01_phase_import_restricted",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.109,
+      "pass": true
+    },
+    {
+      "id": "E02_init_only_no_effect",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 2,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.112,
+      "pass": true
+    },
+    {
+      "id": "E03_init_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.109,
+      "pass": true
+    },
+    {
+      "id": "E04_deep_chain",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 15,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.121,
+      "pass": true
+    },
+    {
+      "id": "E05_deep_chain_violation",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 36,
+      "cov": 1.0,
+      "reason": "4 violation(s) found",
+      "time_s": 0.135,
+      "pass": true
+    },
+    {
+      "id": "E06_init_and_main",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 6,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.11,
+      "pass": true
+    },
+    {
+      "id": "E07_nested_init",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 7,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.121,
+      "pass": true
+    },
+    {
+      "id": "E08_circular_import",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 15,
+      "cov": 1.0,
+      "reason": "2 violation(s) found",
+      "time_s": 0.117,
+      "pass": true
+    },
+    {
+      "id": "E09_class_based",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.114,
+      "pass": true
+    },
+    {
+      "id": "E10_decorator_method",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.11,
+      "pass": true
+    },
+    {
+      "id": "F01_config_reader",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.119,
+      "pass": true
+    },
+    {
+      "id": "F02_logger",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.116,
+      "pass": true
+    },
+    {
+      "id": "F03_http_allowed",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 23,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.136,
+      "pass": true
+    },
+    {
+      "id": "F04_http_exfil",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 24,
+      "cov": 1.0,
+      "reason": "2 violation(s) found",
+      "time_s": 0.129,
+      "pass": true
+    },
+    {
+      "id": "F05_csv_parser",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 5,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.12,
+      "pass": true
+    },
+    {
+      "id": "F06_crypto_net",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 25,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.126,
+      "pass": true
+    },
+    {
+      "id": "F07_sqlite_exec",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 16,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.123,
+      "pass": true
+    },
+    {
+      "id": "F08_subprocess_allowed",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 35,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.168,
+      "pass": true
+    },
+    {
+      "id": "F09_subprocess_disallowed",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 35,
+      "cov": 1.0,
+      "reason": "1 violation(s) found",
+      "time_s": 0.157,
+      "pass": true
+    },
+    {
+      "id": "F10_temp_lifecycle",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.112,
+      "pass": true
+    },
+    {
+      "id": "F11_data_files",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.127,
+      "pass": true
+    },
+    {
+      "id": "F12_telemetry",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 24,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.144,
+      "pass": true
+    },
+    {
+      "id": "F13_cred_leak",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.114,
+      "pass": true
+    },
+    {
+      "id": "F14_dep_confusion",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 10,
+      "cov": 1.0,
+      "reason": "2 violation(s) found",
+      "time_s": 0.118,
+      "pass": true
+    },
+    {
+      "id": "F15_lockfile",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 4,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.117,
+      "pass": true
+    },
+    {
+      "id": "F16_env_dump",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 3,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.115,
+      "pass": true
+    },
+    {
+      "id": "F17_rate_limit_api",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 25,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.131,
+      "pass": true
+    },
+    {
+      "id": "F18_malicious_telemetry",
+      "expected": "VIOLATION",
+      "got": "VIOLATION",
+      "events": 23,
+      "cov": 0.67,
+      "reason": "1 violation(s) found",
+      "time_s": 0.132,
+      "pass": true
+    },
+    {
+      "id": "F19_batch_proc",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 5,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.125,
+      "pass": true
+    },
+    {
+      "id": "F20_key_rotation",
+      "expected": "COMPLIANT",
+      "got": "COMPLIANT",
+      "events": 5,
+      "cov": 1.0,
+      "reason": "No violations; coverage and attribution sufficient",
+      "time_s": 0.121,
+      "pass": true
+    }
+  ]
+}
