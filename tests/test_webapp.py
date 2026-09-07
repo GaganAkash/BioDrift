@@ -1,4 +1,4 @@
-"""API-level tests for the vetting console: auth gate + path confinement."""
+"""API-level tests for the vetting console: login + token gate + path confinement."""
 
 from __future__ import annotations
 
@@ -12,39 +12,80 @@ from fastapi.testclient import TestClient
 
 REPO = Path(__file__).resolve().parent.parent
 
+LOGIN = {"username": "admin", "password": "biodrift"}
 
-@pytest.fixture
-def client():
-    """App with auth disabled (token unset) — the default demo posture."""
-    os.environ.pop("BIODRIFT_API_TOKEN", None)
-    os.environ["BIODRIFT_ALLOW_ANON_GET"] = "0"
+
+def _fresh() -> TestClient:
     sys.path.insert(0, str(REPO / "webapp"))
     import webapp.main as m
 
     importlib.reload(m)
-    with TestClient(m.app) as c:
+    return TestClient(m.app)
+
+
+def _logged_in() -> TestClient:
+    c = _fresh()
+    r = c.post("/login", data=LOGIN, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == "/"
+    return c
+
+
+@pytest.fixture
+def anon():
+    with _fresh() as c:
+        yield c
+
+
+@pytest.fixture
+def client():
+    """Token unset (demo posture) but logged in via the session gate."""
+    os.environ.pop("BIODRIFT_API_TOKEN", None)
+    os.environ["BIODRIFT_ALLOW_ANON_GET"] = "0"
+    with _logged_in() as c:
         yield c
 
 
 @pytest.fixture
 def authed():
-    """App with a token set and anonymous reads disabled."""
+    """Token set and anonymous reads disabled."""
     os.environ["BIODRIFT_API_TOKEN"] = "sekret"
     os.environ["BIODRIFT_ALLOW_ANON_GET"] = "0"
-    sys.path.insert(0, str(REPO / "webapp"))
-    import webapp.main as m
-
-    importlib.reload(m)
-    with TestClient(m.app) as c:
+    with _logged_in() as c:
         yield c
 
 
-def _get(client, path, token=None):
+def _get(c, path, token=None):
     headers = {"Authorization": f"Bearer {token}"} if token else {}
-    return client.get(path, headers=headers)
+    return c.get(path, headers=headers)
 
 
-class TestAuthGate:
+class TestLoginGate:
+    def test_anon_redirected_to_login(self, anon):
+        r = anon.get("/", follow_redirects=False)
+        assert r.status_code == 303
+        assert r.headers["location"] == "/login"
+
+    def test_login_page_served(self, anon):
+        assert anon.get("/login").status_code == 200
+
+    def test_wrong_creds_redirected_to_error(self, anon):
+        r = anon.post("/login", data={"username": "admin", "password": "nope"},
+                      follow_redirects=False)
+        assert r.status_code == 303
+        assert r.headers["location"] == "/login?error=1"
+
+    def test_login_grants_access(self, anon):
+        r = anon.post("/login", data=LOGIN, follow_redirects=False)
+        assert r.headers["location"] == "/"
+        assert anon.get("/api/health").status_code == 200
+
+    def test_logout_clears_session(self, client):
+        r = client.get("/logout", follow_redirects=False)
+        assert r.status_code == 303
+        assert client.get("/api/runs", follow_redirects=False).status_code == 303
+
+
+class TestTokenGate:
     def test_open_when_token_unset(self, client):
         assert _get(client, "/api/runs").status_code == 200
 

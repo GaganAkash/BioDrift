@@ -16,10 +16,11 @@ import sys
 import time
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.responses import FileResponse, StreamingResponse
+from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from starlette.middleware.sessions import SessionMiddleware
 
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "src"))
@@ -43,10 +44,35 @@ DB_PATH = str(REPO / "results" / "biodrift.db")
 API_TOKEN = os.environ.get("BIODRIFT_API_TOKEN", "")
 ALLOW_ANON_GET = os.environ.get("BIODRIFT_ALLOW_ANON_GET", "1") == "1"
 
+# Web UI login (session cookie). Set both in env to change.
+LOGIN_USER = os.environ.get("BIODRIFT_USERNAME", "admin")
+LOGIN_PASS = os.environ.get("BIODRIFT_PASSWORD", "biodrift")
+SESSION_SECRET = os.environ.get("BIODRIFT_SESSION_SECRET", "biodrift-demo-secret")
+
 _NAME_RE = re.compile(r"^[A-Za-z0-9_\-]+$")
 
 app = FastAPI(title="BioDrift Vetting Console")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
+
+_PUBLIC_PATHS = {"/login", "/logout"}
+
+
+@app.middleware("http")
+async def require_session(request: Request, call_next):
+    """Gate the whole console behind the login page (session cookie)."""
+    path = request.url.path
+    if path.startswith("/static") or path in _PUBLIC_PATHS or request.session.get("authed"):
+        return await call_next(request)
+    return RedirectResponse("/login", status_code=303)
+
+
+# Added last so it runs outermost: session is populated before our gate sees it.
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=SESSION_SECRET,
+    same_site="lax",
+    https_only=False,
+)
 
 
 def _check_auth(request: Request, method: str) -> None:
@@ -85,6 +111,25 @@ def _resolve_package(pkg: str) -> Path:
 @app.get("/")
 def index() -> FileResponse:
     return FileResponse(Path(__file__).parent / "static" / "index.html")
+
+
+@app.get("/login")
+def login_page() -> FileResponse:
+    return FileResponse(Path(__file__).parent / "static" / "login.html")
+
+
+@app.post("/login")
+def login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if username == LOGIN_USER and password == LOGIN_PASS:
+        request.session["authed"] = True
+        return RedirectResponse("/", status_code=303)
+    return RedirectResponse("/login?error=1", status_code=303)
+
+
+@app.get("/logout")
+def logout(request: Request):
+    request.session.clear()
+    return RedirectResponse("/login", status_code=303)
 
 
 @app.get("/api/health")
