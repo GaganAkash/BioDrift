@@ -25,6 +25,7 @@ from __future__ import annotations
 import json
 import resource
 import sys
+import tempfile
 import time
 from pathlib import Path
 
@@ -113,6 +114,110 @@ def run_step(n_caps: int, n_events: int, pool: list[Event]) -> dict:
     }
 
 
+_E2E_CONTRACT_TMPL = """\
+package_id: "e2e-stress"
+version_family: "1.x"
+environment:
+  os: "darwin"
+  python_versions: ["3.13"]
+  architecture: "*"
+phase_rules: []
+capability_rules:
+  - capability: "module_load"
+    allowed_resources: ["*"]
+    allowed_destinations: []
+    allowed_actions: ["import"]
+    blocked: false
+    severity: "low"
+  - capability: "file_read"
+    allowed_resources: [{allowed}]
+    allowed_destinations: []
+    allowed_actions: []
+    blocked: false
+    severity: "medium"
+coverage_threshold: 1.0
+provenance:
+  source_url: "https://example.com/e2e-stress"
+  source_hash: "sha256:local"
+  created_by: "progressive-stress"
+  verified_by: ["progressive-stress"]
+  admitted_by: "progressive-stress"
+admission_status: "admitted"
+"""
+
+
+def run_e2e_step(n_events: int, poison: bool) -> dict:
+    """Run a real subprocess workload through the full pipeline.
+
+    The workload reads a scratch file ``n_events`` times; each open() is
+    audited and normalized, so observed event volume tracks the dataset
+    size through intake -> observe -> normalize -> coverage -> decide.
+    The poison variant adds one read of ``/etc/hosts``, which the contract
+    does not allow.
+    """
+    from biodrift.pipeline import run_verification
+
+    base = Path(tempfile.mkdtemp(prefix="biodrift_stress_e2e_"))
+    target = base / "scratch.txt"
+    target.write_text("x")
+
+    if poison:
+        body = (
+            f"t = open({str(target)!r}, 'r').read()\n"
+            f"for _p in range({n_events - 1}):\n"
+            f"    t = open({str(target)!r}, 'r').read()\n"
+            f"t = open('/etc/hosts', 'r').read()\n"
+        )
+    else:
+        body = (
+            f"for _p in range({n_events}):\n"
+            f"    t = open({str(target)!r}, 'r').read()\n"
+        )
+    (base / "scen.py").write_text(body)
+
+    cfg_dir = Path(tempfile.mkdtemp(prefix="biodrift_stress_e2e_cfg_"))
+    contract = cfg_dir / "contract.yaml"
+    contract.write_text(
+        _E2E_CONTRACT_TMPL.format(allowed=json.dumps(str(target)))
+    )
+
+    start = time.monotonic()
+    result = run_verification(
+        package_path=base,
+        contract_path=contract,
+        output_dir=str(REPO / "results"),
+        persist=False,
+    )
+    duration = time.monotonic() - start
+    return {
+        "kind": "e2e",
+        "n_events": n_events,
+        "poison": poison,
+        "observed": result.events_count,
+        "verdict": result.decision.verdict.value,
+        "ok": result.decision.verdict.value
+        == ("VIOLATION" if poison else "COMPLIANT"),
+        "duration_s": round(duration, 2),
+    }
+
+
+def run_e2e() -> list[dict]:
+    steps = [1_000, 5_000, 10_000, 20_000]
+    out: list[dict] = []
+    print(f"\nend-to-end ({'subprocess workload -> full pipeline'}):")
+    print(f"{'events':>7} {'poison':>6} {'verdict':>11} {'observed':>9} "
+          f"{'t_e2e':>7}")
+    for n in steps:
+        for poison in (False, True):
+            r = run_e2e_step(n, poison)
+            out.append(r)
+            print(f"{r['n_events']:>7} {r['poison']!s:>6} "
+                  f"{r['verdict']:>11} {r['observed']:>9} "
+                  f"{r['duration_s']:>7}"
+                  f"{'   <-- FAIL' if not r['ok'] else ''}")
+    return out
+
+
 def main() -> None:
     cap_steps = [1, 4, 9, len(_CAPS)]
     event_steps = [1_000, 10_000, 100_000, 500_000]
@@ -134,7 +239,6 @@ def main() -> None:
 
     out = REPO / "results"
     out.mkdir(exist_ok=True)
-    (out / "progressive_stress.json").write_text(json.dumps(results, indent=2))
     fails = [r for r in results if not (r["clean_ok"] and r["poison_ok"])]
     print(f"\n{len(results) - len(fails)}/{len(results)} steps held verdicts "
           f"under stress")
@@ -143,6 +247,17 @@ def main() -> None:
         for f in fails:
             print(f"  caps={f['n_caps']} events={f['n_events']} "
                   f"clean={f['clean_ok']} poison={f['poison_ok']}")
+
+    e2e = run_e2e()
+    all_results = results + e2e
+    (out / "progressive_stress.json").write_text(
+        json.dumps(all_results, indent=2)
+    )
+    e2e_fails = [r for r in e2e if not r["ok"]]
+    print(f"\ne2e: {len(e2e) - len(e2e_fails)}/{len(e2e)} held verdicts")
+    for f in e2e_fails:
+        print(f"  FAIL events={f['n_events']} poison={f['poison']} "
+              f"got={f['verdict']} observed={f['observed']}")
 
 
 if __name__ == "__main__":
