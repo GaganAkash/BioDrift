@@ -150,7 +150,9 @@ def run_verification(
             for f in decision.findings:
                 FindingRepository(session).create(f)
             if contract is not None:
-                ContractRepository(session).create(contract)
+                repo = ContractRepository(session)
+                if repo.get(contract.contract_id) is None:
+                    repo.create(contract)
 
     elapsed = time.monotonic() - start
     run_meta.environment["verification_duration_s"] = f"{elapsed:.3f}"

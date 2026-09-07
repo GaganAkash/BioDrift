@@ -189,3 +189,37 @@ class TestStorage:
                 repo.update_verdict(meta.run_id, Verdict.COMPLIANT)
                 updated = repo.get(meta.run_id)
                 assert updated.final_verdict == "COMPLIANT"
+
+    def test_contract_create_is_idempotent(self):
+        from biodrift.models.contracts import Contract
+        from biodrift.storage.db import init_db
+        from biodrift.storage.repositories import ContractRepository
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            db_path = str(Path(tmpdir) / "test.db")
+            session_factory = init_db(db_path)
+            contract = Contract(
+                contract_id="A06_fwrite_tmp_multi",
+                package_id="testpkg",
+                version_family="1.0",
+            )
+            with session_factory() as session:
+                repo = ContractRepository(session)
+                repo.create(contract)
+                # The PK constraint rejects a raw duplicate insert...
+                duplicate = Contract(
+                    contract_id="A06_fwrite_tmp_multi",
+                    package_id="testpkg",
+                    version_family="1.0",
+                )
+                raised = False
+                try:
+                    repo.create(duplicate)
+                except Exception:
+                    raised = True
+                assert raised, "duplicate contract_id must hit the PK constraint"
+                session.rollback()  # poison the failed flush, as production does
+                # ...so the pipeline guards with get() before create.
+                if repo.get(contract.contract_id) is None:
+                    repo.create(contract)
+                assert repo.get("A06_fwrite_tmp_multi") is not None
