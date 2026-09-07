@@ -102,7 +102,10 @@ class UserStore:
         if len(password) < 8:
             raise ValueError("password must be at least 8 characters")
         email = (email or "").strip().lower()
-        if email and not _EMAIL_RE.match(email):
+        if not email:
+            # the seeded demo account bypasses this (no email); every real user needs one
+            raise ValueError("email is required")
+        if not _EMAIL_RE.match(email):
             raise ValueError("email must look like name@domain.tld")
         self._users[username] = {
             "password": _hash(password),

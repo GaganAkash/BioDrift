@@ -86,8 +86,9 @@
     <label>Username
       <input name="username" autocomplete="username" required autofocus pattern="[A-Za-z0-9_.\-]{2,32}">
     </label>
-    <label>Email <span class="muted">(optional)</span>
-      <input name="email" type="email" autocomplete="email" placeholder="name@domain.tld">
+    <label>Email
+      <input name="email" type="email" autocomplete="email" placeholder="name@domain.tld"
+             required title="Required — used to send encrypted CSV test results.">
     </label>
     <label>Password
       <input name="password" type="password" autocomplete="new-password" required minlength="8">

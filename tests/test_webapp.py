@@ -64,7 +64,7 @@ def researcher(tmp_path):
     from webapp.users import UserStore
 
     store = UserStore(f)
-    store.upsert("alice", "research123", "researcher")
+    store.upsert("alice", "research123", "researcher", "alice@example.org")
     os.environ.pop("BIODRIFT_API_TOKEN", None)
     with _logged_in(str(f)) as c:
         c.post("/login", data={"username": "alice", "password": "research123"},
@@ -118,7 +118,8 @@ class TestRegistration:
 
     def test_register_creates_researcher_and_autologs(self, anon):
         r = anon.post("/register", data={"username": "newbie",
-                                         "password": "password123"},
+                                         "password": "password123",
+                                         "email": "newbie@example.org"},
                       follow_redirects=False)
         assert r.status_code == 303
         assert r.headers["location"] == "/console"
@@ -126,20 +127,24 @@ class TestRegistration:
         assert anon.get("/api/users").status_code == 403
 
     def test_register_duplicate_rejected(self, anon):
-        anon.post("/register", data={"username": "newbie", "password": "password123"})
-        r = anon.post("/register", data={"username": "newbie", "password": "password123"},
+        anon.post("/register", data={"username": "newbie", "password": "password123",
+                                     "email": "newbie@example.org"})
+        r = anon.post("/register", data={"username": "newbie", "password": "password123",
+                                         "email": "newbie@example.org"},
                       follow_redirects=False)
         assert r.status_code == 303
         assert r.headers["location"].startswith("/register?error=")
 
     def test_register_reserved_username_rejected(self, anon):
-        r = anon.post("/register", data={"username": "admin", "password": "password123"},
+        r = anon.post("/register", data={"username": "admin", "password": "password123",
+                                         "email": "hacker@example.org"},
                       follow_redirects=False)
         assert r.status_code == 303
         assert r.headers["location"].startswith("/register?error=")
 
     def test_registered_account_can_sign_in(self, anon):
-        anon.post("/register", data={"username": "newbie", "password": "password123"})
+        anon.post("/register", data={"username": "newbie", "password": "password123",
+                                     "email": "newbie@example.org"})
         anon.get("/logout")
         r = anon.post("/login", data={"username": "newbie", "password": "password123"},
                       follow_redirects=False)
@@ -161,6 +166,18 @@ class TestRegistration:
         assert r.status_code == 303
         assert "email" in r.headers["location"]
         assert anon.get("/console", follow_redirects=False).status_code == 303
+
+    def test_register_requires_email(self, anon):
+        r = anon.post("/register", data={"username": "noemail", "password": "password123"},
+                      follow_redirects=False)
+        assert r.status_code == 303
+        assert "email" in r.headers["location"]
+        assert anon.get("/console", follow_redirects=False).status_code == 303
+
+    def test_admin_add_requires_email(self, client):
+        r = client.post("/api/users", json={"username": "res2", "password": "password123",
+                                            "role": "researcher"})
+        assert r.status_code == 400
 
     def test_admin_add_rejects_invalid_email(self, client):
         r = client.post("/api/users", json={"username": "res1", "password": "password123",
@@ -218,7 +235,8 @@ class TestRoles:
     def test_admin_manages_users(self, client):
         r = client.post("/api/users", json={"username": "bob",
                                             "password": "password123",
-                                            "role": "researcher"})
+                                            "role": "researcher",
+                                            "email": "bob@example.org"})
         assert r.status_code == 200
         names = [u["username"] for u in client.get("/api/users").json()]
         assert "bob" in names
