@@ -267,7 +267,7 @@
     </div>
   </div>
 
-  <footer>BioDrift · context-aware package vetting · generated console</footer>
+  <footer>BioDrift · context-aware package vetting</footer>
 </div>
 
 <script>
@@ -556,12 +556,15 @@ function drawDonut(el, data) {
   ctx.beginPath(); ctx.arc(cx, cy, R * 0.44, 0, Math.PI * 2);
   ctx.fillStyle = '#12161c'; ctx.fill();
   const legendY = H - 14;
-  let lx = (W - data.length * 76) / 2;
-  data.forEach(d => {
+  ctx.font = '11px system-ui'; ctx.textBaseline = 'alphabetic';
+  const items = data.map(d => ({ d, w: 14 + ctx.measureText(d.label).width }));
+  const totalW = items.reduce((s, i) => s + i.w, 0) + (items.length - 1) * 22;
+  let lx = (W - totalW) / 2;
+  items.forEach(({ d, w }) => {
     ctx.fillStyle = d.color; ctx.fillRect(lx, legendY, 10, 10);
-    ctx.fillStyle = '#8b949e'; ctx.font = '11px system-ui'; ctx.textAlign = 'left';
+    ctx.fillStyle = '#8b949e'; ctx.textAlign = 'left';
     ctx.fillText(d.label, lx + 14, legendY + 9);
-    lx += 76;
+    lx += w + 22;
   });
 }
 
