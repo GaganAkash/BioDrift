@@ -23,6 +23,7 @@ results/figures/
 results/*.html
 results/[0-9a-f]*-[0-9a-f]*.json
 results/biodrift.db
+config/users.json
 config/contracts/_cal_*.yaml
 *.pkl
 *.pyc

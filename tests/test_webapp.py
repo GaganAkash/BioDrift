@@ -1,10 +1,11 @@
-"""API-level tests for the vetting console: login + token gate + path confinement."""
+"""API-level tests for the vetting console: login + roles + token gate + reports."""
 
 from __future__ import annotations
 
 import importlib
 import os
 import sys
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -15,18 +16,19 @@ REPO = Path(__file__).resolve().parent.parent
 LOGIN = {"username": "admin", "password": "biodrift"}
 
 
-def _fresh() -> TestClient:
+def _fresh(users_file: str | None = None) -> TestClient:
     sys.path.insert(0, str(REPO / "webapp"))
+    os.environ["BIODRIFT_USERS_FILE"] = users_file or tempfile.mkstemp(suffix=".json")[1]
     import webapp.main as m
 
     importlib.reload(m)
     return TestClient(m.app)
 
 
-def _logged_in() -> TestClient:
-    c = _fresh()
+def _logged_in(users_file: str | None = None) -> TestClient:
+    c = _fresh(users_file)
     r = c.post("/login", data=LOGIN, follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == "/"
+    assert r.status_code == 303 and r.headers["location"] == "/console"
     return c
 
 
@@ -54,14 +56,35 @@ def authed():
         yield c
 
 
+@pytest.fixture
+def researcher(tmp_path):
+    """Non-admin user seeded into an isolated users store."""
+    f = tmp_path / "users.json"
+    sys.path.insert(0, str(REPO / "webapp"))
+    from webapp.users import UserStore
+
+    store = UserStore(f)
+    store.upsert("alice", "research123", "researcher")
+    os.environ.pop("BIODRIFT_API_TOKEN", None)
+    with _logged_in(str(f)) as c:
+        c.post("/login", data={"username": "alice", "password": "research123"},
+               follow_redirects=False)
+        yield c
+
+
 def _get(c, path, token=None):
     headers = {"Authorization": f"Bearer {token}"} if token else {}
     return c.get(path, headers=headers)
 
 
 class TestLoginGate:
-    def test_anon_redirected_to_login(self, anon):
-        r = anon.get("/", follow_redirects=False)
+    def test_landing_public(self, anon):
+        r = anon.get("/")
+        assert r.status_code == 200
+        assert "BioDrift" in r.text
+
+    def test_console_redirected_to_login(self, anon):
+        r = anon.get("/console", follow_redirects=False)
         assert r.status_code == 303
         assert r.headers["location"] == "/login"
 
@@ -76,13 +99,17 @@ class TestLoginGate:
 
     def test_login_grants_access(self, anon):
         r = anon.post("/login", data=LOGIN, follow_redirects=False)
-        assert r.headers["location"] == "/"
+        assert r.headers["location"] == "/console"
         assert anon.get("/api/health").status_code == 200
 
     def test_logout_clears_session(self, client):
         r = client.get("/logout", follow_redirects=False)
         assert r.status_code == 303
         assert client.get("/api/runs", follow_redirects=False).status_code == 303
+
+    def test_me_reports_role(self, client):
+        me = client.get("/api/me").json()
+        assert me["role"] == "admin"
 
 
 class TestTokenGate:
@@ -119,3 +146,61 @@ class TestPathConfinement:
                         headers={"Authorization": "Bearer sekret"})
         assert r.status_code == 200
         assert r.json()["verdict"] == "COMPLIANT"
+
+
+class TestRoles:
+    def test_researcher_sees_overview(self, researcher):
+        assert researcher.get("/api/overview").status_code == 200
+
+    def test_researcher_blocked_from_users(self, researcher):
+        assert researcher.get("/api/users").status_code == 403
+        r = researcher.post("/api/users", json={"username": "bob",
+                                                "password": "password123",
+                                                "role": "researcher"})
+        assert r.status_code == 403
+
+    def test_admin_manages_users(self, client):
+        r = client.post("/api/users", json={"username": "bob",
+                                            "password": "password123",
+                                            "role": "researcher"})
+        assert r.status_code == 200
+        names = [u["username"] for u in client.get("/api/users").json()]
+        assert "bob" in names
+        assert client.delete("/api/users/bob").status_code == 200
+
+    def test_weak_password_rejected(self, client):
+        r = client.post("/api/users", json={"username": "bob", "password": "short",
+                                            "role": "researcher"})
+        assert r.status_code == 400
+
+    def test_cannot_delete_self(self, client):
+        assert client.delete("/api/users/admin").status_code == 400
+
+
+class TestReports:
+    def test_incidents_json(self, client):
+        r = client.get("/api/reports/incidents")
+        assert r.status_code == 200
+        assert isinstance(r.json(), list)
+
+    def test_incidents_csv(self, client):
+        r = client.get("/api/reports/incidents?format=csv")
+        assert r.status_code == 200
+        assert "text/csv" in r.headers["content-type"]
+        assert r.text.startswith("run_id")
+
+    def test_audit_csv(self, client):
+        r = client.get("/api/reports/audit?format=csv")
+        assert r.status_code == 200
+        assert "text/csv" in r.headers["content-type"]
+
+    def test_audit_rejects_bad_format(self, client):
+        assert client.get("/api/reports/audit?format=xml").status_code == 400
+
+    def test_analytics_shape(self, client):
+        a = client.get("/api/reports/analytics").json()
+        for key in ("runs_total", "verdicts", "verdicts_over_time", "avg_events_per_run"):
+            assert key in a
+
+    def test_bad_format_rejected(self, client):
+        assert client.get("/api/reports/incidents?format=xml").status_code == 400

@@ -3,21 +3,25 @@
 The verification work is done by the existing pipeline
 (biodrift.pipeline.run_verification), which runs the candidate package in an
 isolated subprocess under sys.audit OS-level hooks. This app only glues that
-to a browser: contracts, runs, and the stress dashboards.
+to a browser: contracts, runs, stress dashboards, reports, and user admin.
 """
 
 from __future__ import annotations
 
 import asyncio
+import csv
+import io
 import json
 import os
 import re
 import sys
 import time
+from collections import defaultdict
+from datetime import date, timedelta
 from pathlib import Path
 
 from fastapi import FastAPI, Form, HTTPException, Request
-from fastapi.responses import FileResponse, RedirectResponse, StreamingResponse
+from fastapi.responses import FileResponse, RedirectResponse, Response, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from starlette.middleware.sessions import SessionMiddleware
@@ -33,6 +37,7 @@ from biodrift.storage.repositories import (  # noqa: E402
     FindingRepository,
     RunRepository,
 )
+from webapp.users import UserStore  # noqa: E402
 
 CONTRACTS_DIR = REPO / "config" / "contracts"
 FIXTURES_DIR = REPO / "fixtures"
@@ -44,9 +49,6 @@ DB_PATH = str(REPO / "results" / "biodrift.db")
 API_TOKEN = os.environ.get("BIODRIFT_API_TOKEN", "")
 ALLOW_ANON_GET = os.environ.get("BIODRIFT_ALLOW_ANON_GET", "1") == "1"
 
-# Web UI login (session cookie). Set both in env to change.
-LOGIN_USER = os.environ.get("BIODRIFT_USERNAME", "admin")
-LOGIN_PASS = os.environ.get("BIODRIFT_PASSWORD", "biodrift")
 SESSION_SECRET = os.environ.get("BIODRIFT_SESSION_SECRET", "biodrift-demo-secret")
 
 _NAME_RE = re.compile(r"^[A-Za-z0-9_\-]+$")
@@ -54,14 +56,22 @@ _NAME_RE = re.compile(r"^[A-Za-z0-9_\-]+$")
 app = FastAPI(title="BioDrift Vetting Console")
 app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static")
 
-_PUBLIC_PATHS = {"/login", "/logout"}
+# Session users + roles live in config/users.json (see webapp/users.py).
+users = UserStore()
+
+# Landing page and auth pages are public; the console itself is behind login.
+_PUBLIC_PATHS = {"/", "/login", "/logout"}
 
 
 @app.middleware("http")
 async def require_session(request: Request, call_next):
-    """Gate the whole console behind the login page (session cookie)."""
+    """Gate the console and its APIs behind the login page (session cookie)."""
     path = request.url.path
-    if path.startswith("/static") or path in _PUBLIC_PATHS or request.session.get("authed"):
+    if (
+        path.startswith("/static")
+        or path in _PUBLIC_PATHS
+        or request.session.get("authed")
+    ):
         return await call_next(request)
     return RedirectResponse("/login", status_code=303)
 
@@ -91,6 +101,11 @@ def _safe_name(name: str) -> str:
     return name
 
 
+def _require_admin(request: Request) -> None:
+    if request.session.get("role") != "admin":
+        raise HTTPException(403, "admin role required")
+
+
 def _contract_path(name: str) -> Path:
     return CONTRACTS_DIR / f"{_safe_name(name)}.yaml"
 
@@ -109,6 +124,11 @@ def _resolve_package(pkg: str) -> Path:
 
 
 @app.get("/")
+def landing() -> FileResponse:
+    return FileResponse(Path(__file__).parent / "static" / "landing.html")
+
+
+@app.get("/console")
 def index() -> FileResponse:
     return FileResponse(Path(__file__).parent / "static" / "index.html")
 
@@ -120,9 +140,12 @@ def login_page() -> FileResponse:
 
 @app.post("/login")
 def login(request: Request, username: str = Form(...), password: str = Form(...)):
-    if username == LOGIN_USER and password == LOGIN_PASS:
+    u = users.authenticate(username, password)
+    if u:
         request.session["authed"] = True
-        return RedirectResponse("/", status_code=303)
+        request.session["user"] = u["username"]
+        request.session["role"] = u["role"]
+        return RedirectResponse("/console", status_code=303)
     return RedirectResponse("/login?error=1", status_code=303)
 
 
@@ -135,6 +158,194 @@ def logout(request: Request):
 @app.get("/api/health")
 def health() -> dict:
     return {"status": "ok", "contracts": len(list(CONTRACTS_DIR.glob("*.yaml")))}
+
+
+def _run_to_dict(r) -> dict:
+    return {
+        "run_id": r.run_id,
+        "package_id": r.package_id,
+        "candidate_version": r.candidate_version,
+        "final_verdict": r.final_verdict,
+        "timestamp": r.timestamp.isoformat() if r.timestamp else None,
+    }
+
+
+@app.get("/api/me")
+def me(request: Request) -> dict:
+    return {
+        "username": request.session.get("user"),
+        "role": request.session.get("role", "viewer"),
+    }
+
+
+@app.get("/api/overview")
+def overview(request: Request) -> dict:
+    _check_auth(request, "GET")
+    db = init_db(DB_PATH)
+    with db() as session:
+        runs = RunRepository(session)
+        verdicts = runs.verdict_counts()
+        recent = [_run_to_dict(r) for r in runs.list_runs()[:5]]
+        runs_total = runs.count_all()
+        events_total = EventRepository(session).count_all()
+        findings_total = FindingRepository(session).count_all()
+
+    stress = {}
+    for name in ("progressive_stress.json", "calibrate_100.json"):
+        p = REPO / "results" / name
+        if p.exists():
+            stress[name] = json.loads(p.read_text())
+    prog = stress.get("progressive_stress.json") or []
+    cal = stress.get("calibrate_100.json") or {}
+    cal_rows = cal.get("results", []) if isinstance(cal.get("results"), list) else []
+    engine_rows = [r for r in prog if not r.get("kind")]
+
+    return {
+        "runs_total": runs_total,
+        "verdicts": verdicts,
+        "events_total": events_total,
+        "findings_total": findings_total,
+        "contracts": len(list(CONTRACTS_DIR.glob("*.yaml"))),
+        "packages": len(list_packages()),
+        "recent": recent,
+        "stress": {
+            "engine_steps": len(engine_rows),
+            "e2e_runs": len([r for r in prog if r.get("kind")]),
+            "all_ok": bool(engine_rows)
+            and all(r.get("clean_ok") and r.get("poison_ok") for r in engine_rows),
+        },
+        "calibrate": {"total": cal.get("total", 0), "pass": cal.get("pass", 0)},
+        "calibrate_rows": cal_rows[:5],
+    }
+
+
+class UserIn(BaseModel):
+    username: str
+    password: str
+    role: str = "researcher"
+
+
+@app.get("/api/users")
+def list_users(request: Request) -> list[dict]:
+    _require_admin(request)
+    return users.list()
+
+
+@app.post("/api/users")
+def create_user(u: UserIn, request: Request) -> dict:
+    _require_admin(request)
+    try:
+        users.upsert(u.username, u.password, u.role)
+    except ValueError as e:
+        raise HTTPException(400, str(e)) from None
+    return {"ok": True, "username": u.username, "role": u.role}
+
+
+@app.delete("/api/users/{username}")
+def delete_user(username: str, request: Request) -> dict:
+    _require_admin(request)
+    if username == request.session.get("user"):
+        raise HTTPException(400, "cannot delete the account you are signed in as")
+    try:
+        users.delete(username)
+    except KeyError:
+        raise HTTPException(404, f"no user named {username}") from None
+    return {"ok": True}
+
+
+def _csv_response(rows: list[dict], filename: str) -> Response:
+    buf = io.StringIO()
+    fieldnames = list(rows[0].keys()) if rows else []
+    writer = csv.DictWriter(buf, fieldnames=fieldnames)
+    writer.writeheader()
+    writer.writerows(rows)
+    return Response(
+        content=buf.getvalue(),
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@app.get("/api/reports/incidents", response_model=None)
+def incidents(request: Request, format: str = "json") -> Response | list[dict]:
+    _check_auth(request, "GET")
+    db = init_db(DB_PATH)
+    with db() as session:
+        rows = [
+            {
+                "run_id": f.run_id,
+                "package_id": f.package_id,
+                "capability": f.capability,
+                "reason": f.reason,
+                "severity": f.severity,
+                "timestamp": f.timestamp.isoformat() if f.timestamp else None,
+            }
+            for f in FindingRepository(session).incidents()
+        ]
+    if format == "csv":
+        return _csv_response(rows, "biodrift_incidents.csv")
+    if format != "json":
+        raise HTTPException(400, "format must be json or csv")
+    return rows
+
+
+@app.get("/api/reports/audit", response_model=None)
+def audit_log(request: Request, format: str = "json", limit: int = 500) -> Response | list[dict]:
+    _check_auth(request, "GET")
+    limit = max(1, min(limit, 10_000))
+    db = init_db(DB_PATH)
+    with db() as session:
+        rows = [
+            {
+                "run_id": e.run_id,
+                "timestamp": e.timestamp.isoformat() if e.timestamp else None,
+                "phase": e.phase,
+                "capability": e.capability,
+                "action": e.action,
+                "resource": e.resource,
+                "destination": e.destination,
+                "process_id": e.process_id,
+            }
+            for e in EventRepository(session).recent(limit)
+        ]
+    if format == "csv":
+        return _csv_response(rows, "biodrift_audit.csv")
+    if format != "json":
+        raise HTTPException(400, "format must be json or csv")
+    return rows
+
+
+@app.get("/api/reports/analytics")
+def analytics(request: Request) -> dict:
+    _check_auth(request, "GET")
+    db = init_db(DB_PATH)
+    with db() as session:
+        runs = [_run_to_dict(r) for r in RunRepository(session).list_runs()[:500]]
+        events_total = EventRepository(session).count_all()
+        findings_total = FindingRepository(session).count_all()
+
+    counts: dict[str, int] = defaultdict(int)
+    days: dict[str, int] = defaultdict(int)
+    for r in runs:
+        key = r["final_verdict"] or "UNKNOWN"
+        counts[key] += 1
+        if r["timestamp"]:
+            days[r["timestamp"][:10]] += 1
+
+    verdicts_over_time = [
+        {"day": (date.today() - timedelta(days=13 - i)).isoformat(),
+         "count": days.get((date.today() - timedelta(days=13 - i)).isoformat(), 0)}
+        for i in range(14)
+    ]
+
+    return {
+        "runs_total": len(runs),
+        "events_total": events_total,
+        "findings_total": findings_total,
+        "verdicts": dict(counts),
+        "verdicts_over_time": verdicts_over_time,
+        "avg_events_per_run": round(events_total / len(runs), 1) if runs else None,
+    }
 
 
 class ContractIn(BaseModel):

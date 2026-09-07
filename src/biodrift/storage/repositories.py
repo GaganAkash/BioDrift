@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from biodrift.models import Event, Finding, RunMeta, Verdict
@@ -46,6 +47,17 @@ class RunRepository:
         if package_id:
             q = q.filter(RunRecord.package_id == package_id)
         return q.order_by(RunRecord.timestamp.desc()).all()
+
+    def count_all(self) -> int:
+        return self.session.query(func.count(RunRecord.run_id)).scalar() or 0
+
+    def verdict_counts(self) -> dict[str, int]:
+        rows = (
+            self.session.query(RunRecord.final_verdict, func.count())
+            .group_by(RunRecord.final_verdict)
+            .all()
+        )
+        return {verdict or "UNKNOWN": count for verdict, count in rows}
 
 
 class EventRepository:
@@ -111,6 +123,17 @@ class EventRepository:
     def count_by_run(self, run_id: str) -> int:
         return self.session.query(EventRecord).filter(EventRecord.run_id == run_id).count()
 
+    def count_all(self) -> int:
+        return self.session.query(func.count(EventRecord.evidence_id)).scalar() or 0
+
+    def recent(self, limit: int = 500) -> list[EventRecord]:
+        return (
+            self.session.query(EventRecord)
+            .order_by(EventRecord.timestamp.desc())
+            .limit(limit)
+            .all()
+        )
+
 
 class FindingRepository:
     def __init__(self, session: Session):
@@ -148,6 +171,18 @@ class FindingRepository:
             self.session.query(FindingRecord)
             .filter(FindingRecord.run_id == run_id, FindingRecord.verdict == verdict)
             .count()
+        )
+
+    def count_all(self) -> int:
+        return self.session.query(func.count(FindingRecord.finding_id)).scalar() or 0
+
+    def incidents(self, limit: int = 200) -> list[FindingRecord]:
+        return (
+            self.session.query(FindingRecord)
+            .filter(FindingRecord.verdict == "VIOLATION")
+            .order_by(FindingRecord.timestamp.desc())
+            .limit(limit)
+            .all()
         )
 
 
