@@ -6,7 +6,7 @@
     "events": 4,
     "coverage": 1.0,
     "reason": "No violations; coverage and attribution sufficient",
-    "duration_s": 0.13,
+    "duration_s": 0.12,
     "pass": true
   },
   {
@@ -36,7 +36,7 @@
     "events": 3,
     "coverage": 1.0,
     "reason": "1 violation(s) found",
-    "duration_s": 0.11,
+    "duration_s": 0.12,
     "pass": true
   },
   {
@@ -46,7 +46,7 @@
     "events": 3,
     "coverage": 1.0,
     "reason": "1 violation(s) found",
-    "duration_s": 0.12,
+    "duration_s": 0.13,
     "pass": true
   },
   {
@@ -56,7 +56,7 @@
     "events": 2,
     "coverage": 0.5,
     "reason": "Candidate workload failed (exit code 1); observed behavior may be incomplete",
-    "duration_s": 0.11,
+    "duration_s": 0.14,
     "pass": true
   },
   {
@@ -76,7 +76,7 @@
     "events": 3,
     "coverage": 1.0,
     "reason": "1 violation(s) found",
-    "duration_s": 0.11,
+    "duration_s": 0.12,
     "pass": true
   },
   {
@@ -86,7 +86,7 @@
     "events": 4,
     "coverage": 1.0,
     "reason": "1 violation(s) found",
-    "duration_s": 0.11,
+    "duration_s": 0.12,
     "pass": true
   },
   {
@@ -96,7 +96,7 @@
     "events": 3,
     "coverage": 0.5,
     "reason": "Insufficient coverage: 50.00% < 80.00%; never observed: file_read",
-    "duration_s": 0.11,
+    "duration_s": 0.12,
     "pass": true
   }
 ]
