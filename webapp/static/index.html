@@ -2,97 +2,243 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BioDrift Vetting Console</title>
 <style>
-  body { font-family: system-ui, sans-serif; max-width: 1100px; margin: 0 auto;
-         padding: 0 1rem 3rem; color: #222; }
-  h1 { border-bottom: 2px solid #ddd; padding-bottom: .5rem; }
-  .tabs { display: flex; gap: .25rem; margin: 1rem 0; }
-  .tab { padding: .5rem 1.2rem; cursor: pointer; border: 1px solid #ddd;
-         border-bottom: none; border-radius: 8px 8px 0 0; background: #f5f5f5; }
-  .tab.active { background: #fff; font-weight: bold; border-top: 3px solid #2d6a4f; }
-  .panel { display: none; border: 1px solid #ddd; border-radius: 0 8px 8px 8px;
-           padding: 1.2rem; }
-  .panel.active { display: block; }
-  .verdict { font-size: 1.8rem; font-weight: bold; margin: .5rem 0; }
-  table { width: 100%; border-collapse: collapse; margin: .8rem 0; font-size: .92rem; }
-  th, td { text-align: left; padding: .45rem .6rem; border-bottom: 1px solid #eee; }
-  th { background: #f5f5f5; }
-  code, .mono { font-family: ui-monospace, monospace; font-size: .9rem;
-                background: #f0f0f0; padding: .1rem .35rem; border-radius: 3px; }
-  .meta { color: #666; font-size: .9rem; }
-  button { padding: .45rem 1rem; border: none; border-radius: 6px;
-           background: #2d6a4f; color: #fff; cursor: pointer; font-size: .95rem; }
-  button.secondary { background: #555; }
-  button.danger { background: #d00000; }
-  select, textarea { padding: .4rem; border: 1px solid #ccc; border-radius: 6px; }
-  textarea { font-family: ui-monospace, monospace; width: 100%; min-height: 14rem; }
-  .cap { display: inline-block; padding: .15rem .5rem; border-radius: 99px;
-         font-size: .78rem; background: #e8ecef; }
-  .cap.V { background: #fde3dd; color: #d00000; }
-  .err { color: #d00000; font-weight: bold; }
-  .ok { color: #2d6a4f; font-weight: bold; }
-  .row { display: flex; gap: .6rem; align-items: center; flex-wrap: wrap; margin: .6rem 0; }
-  .muted { color: #999; }
+  :root {
+    --accent: #7ef0c8;
+    --accent2: #38bdf8;
+    --danger: #ff5c5c;
+    --warn: #ffb454;
+    --ink: #e8f6f0;
+    --ink-dim: #9fb8af;
+    --glass: rgba(12, 30, 26, 0.42);
+    --glass-border: rgba(255, 255, 255, 0.14);
+    --glass-high: rgba(255, 255, 255, 0.09);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; }
+  body {
+    font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
+    color: var(--ink);
+    min-height: 100vh;
+    background:
+      radial-gradient(1200px 800px at 12% -10%, rgba(56,189,248,0.22), transparent 60%),
+      radial-gradient(1000px 700px at 100% 0%, rgba(126,240,200,0.18), transparent 55%),
+      radial-gradient(800px 600px at 80% 110%, rgba(120,80,255,0.20), transparent 60%),
+      linear-gradient(160deg, #04130f 0%, #061a15 45%, #051018 100%);
+    background-attachment: fixed;
+    position: relative;
+    overflow-x: hidden;
+  }
+  /* animated network lattice */
+  .bg {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(rgba(126,240,200,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(126,240,200,0.05) 1px, transparent 1px);
+    background-size: 44px 44px;
+    mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
+    -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
+  }
+  .bg::after {
+    content: ""; position: absolute; inset: 0;
+    background-image: radial-gradient(rgba(126,240,200,0.20) 1px, transparent 1px);
+    background-size: 110px 110px; background-position: 55px 55px;
+    animation: pan 60s linear infinite;
+  }
+  @keyframes pan { to { background-position: 220px 220px; } }
+  .orb {
+    position: fixed; border-radius: 50%; filter: blur(70px); opacity: .5; z-index: 0;
+    animation: drift 26s ease-in-out infinite alternate;
+  }
+  .orb.a { width: 420px; height: 420px; background: #0bd3a0; top: -8%; left: -6%; }
+  .orb.b { width: 500px; height: 500px; background: #2563eb; bottom: -12%; right: -8%;
+           animation-delay: -8s; }
+  .orb.c { width: 300px; height: 300px; background: #7c3aed; top: 55%; left: 65%;
+           animation-delay: -16s; }
+  @keyframes drift {
+    from { transform: translate(0,0) scale(1); }
+    to   { transform: translate(70px,40px) scale(1.15); }
+  }
+  .wrap {
+    position: relative; z-index: 1; max-width: 1160px; margin: 0 auto;
+    padding: 2.2rem 1.2rem 4rem;
+  }
+  header { display: flex; align-items: flex-end; justify-content: space-between;
+           flex-wrap: wrap; gap: .6rem; margin-bottom: 1.6rem; }
+  .logo { display: flex; align-items: center; gap: .8rem; }
+  .shield {
+    width: 46px; height: 52px; position: relative; filter: drop-shadow(0 0 14px rgba(126,240,200,0.5));
+  }
+  .shield::before {
+    content: ""; position: absolute; inset: 0;
+    clip-path: polygon(50% 0, 96% 14%, 90% 70%, 50% 100%, 10% 70%, 4% 14%);
+    background: linear-gradient(160deg, var(--accent), var(--accent2));
+  }
+  .shield::after {
+    content: "✓"; position: absolute; inset: 0; display: grid; place-items: center;
+    color: #04130f; font-weight: 800; font-size: 1.15rem;
+  }
+  .logo h1 { margin: 0; font-size: 1.5rem; letter-spacing: .5px; }
+  .logo p { margin: .1rem 0 0; color: var(--ink-dim); font-size: .85rem; }
+  #health { color: var(--ink-dim); font-size: .85rem; }
+
+  .glass {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: 18px;
+    backdrop-filter: blur(18px) saturate(150%);
+    -webkit-backdrop-filter: blur(18px) saturate(150%);
+    box-shadow: 0 8px 40px rgba(0,0,0,0.35), inset 0 1px 0 var(--glass-high);
+  }
+
+  .tabs { display: flex; gap: .4rem; padding: .45rem; }
+  .tab {
+    flex: 1; text-align: center; padding: .75rem; cursor: pointer;
+    border-radius: 12px; color: var(--ink-dim); font-weight: 600; font-size: .95rem;
+    transition: all .2s ease; border: 1px solid transparent;
+  }
+  .tab:hover { color: var(--ink); background: var(--glass-high); }
+  .tab.active {
+    color: var(--accent);
+    background: var(--glass-high);
+    border-color: var(--glass-border);
+    box-shadow: 0 0 0 1px rgba(126,240,200,0.25), 0 4px 18px rgba(126,240,200,0.08);
+  }
+  .panel { display: none; padding: 1.6rem; margin-top: 1rem; }
+  .panel.active { display: block; animation: fade .3s ease; }
+  @keyframes fade { from { opacity: 0; transform: translateY(6px); } }
+
+  h2, h3 { margin-top: 0; font-weight: 600; }
+  h3 { color: var(--accent2); text-transform: uppercase; font-size: .8rem;
+       letter-spacing: 1.5px; margin-bottom: .4rem; }
+  .meta { color: var(--ink-dim); font-size: .9rem; line-height: 1.5; }
+  .row { display: flex; gap: .7rem; align-items: center; flex-wrap: wrap; margin: 1rem 0; }
+  label { font-size: .82rem; color: var(--ink-dim); display: flex; flex-direction: column; gap: .35rem; }
+  select, textarea {
+    padding: .6rem .8rem; border-radius: 10px; background: rgba(4,19,15,0.55);
+    border: 1px solid var(--glass-border); color: var(--ink); font-size: .92rem;
+    outline: none;
+  }
+  select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(126,240,200,0.15); }
+  textarea { font-family: ui-monospace, monospace; width: 100%; min-height: 15rem; line-height: 1.45; }
+  button {
+    padding: .6rem 1.2rem; border: none; border-radius: 11px; cursor: pointer;
+    font-weight: 600; font-size: .92rem; color: #04130f;
+    background: linear-gradient(150deg, var(--accent), var(--accent2));
+    box-shadow: 0 4px 18px rgba(126,240,200,0.28);
+    transition: transform .12s ease, box-shadow .2s ease;
+  }
+  button:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(126,240,200,0.4); }
+  button:active { transform: translateY(0); }
+  button.secondary { background: rgba(255,255,255,0.12); color: var(--ink);
+                     box-shadow: none; border: 1px solid var(--glass-border); }
+  button.danger { background: linear-gradient(150deg, #ff6b6b, #d64545);
+                  box-shadow: 0 4px 18px rgba(255,92,92,0.28); }
+  button:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .9rem; }
+  th, td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--glass-border); }
+  th { color: var(--ink-dim); font-weight: 600; font-size: .78rem; text-transform: uppercase;
+       letter-spacing: .6px; }
+  tbody tr:hover { background: var(--glass-high); }
+  code, .mono { font-family: ui-monospace, monospace; font-size: .86rem;
+                background: rgba(255,255,255,0.08); padding: .1rem .4rem; border-radius: 5px; }
+  .verdict { font-size: 2.2rem; font-weight: 700; margin: .4rem 0 .6rem;
+             text-shadow: 0 0 30px currentColor; }
+  .cap { display: inline-block; padding: .15rem .55rem; border-radius: 99px; font-size: .76rem;
+         background: rgba(255,255,255,0.1); }
+  .cap.V { background: rgba(255,92,92,0.18); }
+  .err { color: var(--danger); font-weight: 700; }
+  .ok { color: var(--accent); font-weight: 700; }
+  .muted { color: var(--ink-dim); }
+  .badge { display: inline-block; padding: .25rem .7rem; border-radius: 99px; font-size: .78rem;
+           font-weight: 600; background: rgba(255,255,255,0.1); }
+  .badge.good { background: rgba(126,240,200,0.16); color: var(--accent); }
+  .badge.bad { background: rgba(255,92,92,0.16); color: var(--danger); }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: .7rem; }
+  .stat { padding: .9rem 1rem; border-radius: 12px; background: var(--glass-high);
+          border: 1px solid var(--glass-border); }
+  .stat .n { font-size: 1.4rem; font-weight: 700; color: var(--accent); }
+  .stat .l { font-size: .75rem; color: var(--ink-dim); text-transform: uppercase; letter-spacing: .5px; }
+  .scroll { max-height: 420px; overflow: auto; border-radius: 12px;
+            border: 1px solid var(--glass-border); }
+  .pillbar { height: 8px; border-radius: 99px; background: rgba(255,255,255,0.08); overflow: hidden; }
+  .pillbar i { display: block; height: 100%; border-radius: 99px;
+               background: linear-gradient(90deg, var(--accent), var(--accent2)); }
+  footer { margin-top: 2.4rem; text-align: center; color: var(--ink-dim); font-size: .8rem; }
 </style>
 </head>
 <body>
-<h1>BioDrift Vetting Console</h1>
-<p class="meta" id="health"></p>
-<div class="tabs">
-  <div class="tab active" data-tab="verify">Verify</div>
-  <div class="tab" data-tab="contracts">Contracts</div>
-  <div class="tab" data-tab="runs">Runs</div>
-  <div class="tab" data-tab="stress">Stress</div>
-</div>
+<div class="orb a"></div><div class="orb b"></div><div class="orb c"></div>
+<div class="bg"></div>
 
-<div id="verify" class="panel active">
-  <h3>OS-level behavioral verification</h3>
-  <p class="meta">Runs the selected package in an isolated subprocess under
-     <code>sys.audit</code> hooks; every real file/network/process/import call
-     is captured and checked against the contract.</p>
-  <div class="row">
-    <label>Package
-      <select id="pkg"></select>
-    </label>
-    <label>Contract
-      <select id="contract"></select>
-    </label>
-    <button id="run">Run verification</button>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <div class="shield"></div>
+      <div>
+        <h1>BioDrift Vetting Console</h1>
+        <p>Contextual behavioral verification under incomplete observation</p>
+      </div>
+    </div>
+    <div id="health" class="glass" style="padding:.5rem .9rem"></div>
+  </header>
+
+  <nav class="tabs glass">
+    <div class="tab active" data-tab="verify">🛡 Verify</div>
+    <div class="tab" data-tab="contracts">▤ Contracts</div>
+    <div class="tab" data-tab="runs">⏱ Runs</div>
+    <div class="tab" data-tab="stress">▦ Stress</div>
+  </nav>
+
+  <div id="verify" class="panel glass active">
+    <h3>OS-level behavioral verification</h3>
+    <p class="meta">Runs the selected package in an isolated subprocess under
+       <code>sys.audit</code> hooks. Every real file, network, process, and
+       import call is captured at the OS level and checked against the contract.</p>
+    <div class="row">
+      <label>Package <select id="pkg" class="glass"></select></label>
+      <label>Contract <select id="contract" class="glass"></select></label>
+      <button id="run" style="align-self:flex-end">Run verification</button>
+    </div>
+    <div id="vresult"></div>
   </div>
-  <div id="vresult"></div>
-</div>
 
-<div id="contracts" class="panel">
-  <h3>Contract library</h3>
-  <div class="row">
-    <select id="clist"></select>
-    <button id="cedit" class="secondary">Edit</button>
-    <button id="cnew">New</button>
-    <button id="cdel" class="danger">Delete</button>
-    <button id="csave">Save</button>
+  <div id="contracts" class="panel glass">
+    <h3>Contract library</h3>
+    <div class="row">
+      <select id="clist" class="glass"></select>
+      <button id="cedit" class="secondary">Edit</button>
+      <button id="cnew" class="secondary">New</button>
+      <button id="cdel" class="danger">Delete</button>
+      <button id="csave">Save</button>
+    </div>
+    <textarea id="cyaml" spellcheck="false"></textarea>
+    <p class="meta" id="cmsg"></p>
   </div>
-  <textarea id="cyaml" placeholder="contract YAML"></textarea>
-  <p class="meta" id="cmsg"></p>
-</div>
 
-<div id="runs" class="panel">
-  <h3>Run history</h3>
-  <table id="runstable">
-    <thead><tr><th>Verdict</th><th>Package</th><th>Run</th><th>Time</th></tr></thead>
-    <tbody></tbody>
-  </table>
-</div>
+  <div id="runs" class="panel glass">
+    <h3>Run history</h3>
+    <div class="scroll"><table id="runstable">
+      <thead><tr><th>Verdict</th><th>Package</th><th>Run</th><th>Time</th></tr></thead>
+      <tbody></tbody>
+    </table></div>
+  </div>
 
-<div id="stress" class="panel">
-  <h3>Progressive stress</h3>
-  <div id="stressprog"></div>
-  <h3>Calibration</h3>
-  <div id="stresscal"></div>
+  <div id="stress" class="panel glass">
+    <h3>Progressive stress <span class="muted" style="text-transform:none">— decision engine scaling</span></h3>
+    <div id="stressprog" class="scroll"></div>
+    <h3 style="margin-top:1.4rem">Calibration <span class="muted" style="text-transform:none">— 100 scenarios</span></h3>
+    <div id="stresscal" class="scroll"></div>
+  </div>
+
+  <footer>BioDrift · context-aware package vetting · generated console</footer>
 </div>
 
 <script>
-const VCOLOR = { "COMPLIANT": "#2d6a4f", "VIOLATION": "#d00000", "INCONCLUSIVE": "#e85d04" };
+const VCOLOR = { "COMPLIANT": "#7ef0c8", "VIOLATION": "#ff5c5c", "INCONCLUSIVE": "#ffb454" };
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -113,11 +259,12 @@ async function api(path, opts) {
 }
 
 function verdictBanner(v, reason, extra) {
-  const c = VCOLOR[v] || "#555";
-  let html = `<div class="verdict" style="color:${c}">${esc(v)}</div>
-    <p class="meta">${esc(reason)}</p>`;
-  if (extra) html += `<p class="meta">${extra}</p>`;
-  return html;
+  const c = VCOLOR[v] || "#fff";
+  const cls = { "COMPLIANT": "good", "VIOLATION": "bad", "INCONCLUSIVE": "bad" }[v] || "good";
+  return `<div class="verdict" style="color:${c}">
+    <span class="badge ${cls}" style="font-size:.9rem">${esc(v)}</span></div>
+    <p class="meta">${esc(reason)}</p>
+    ${extra ? `<p class="meta">${extra}</p>` : ""}`;
 }
 
 /* --- Verify --- */
@@ -128,30 +275,40 @@ async function refreshSelections() {
 }
 $("run").addEventListener("click", async () => {
   const v = $("vresult");
-  v.innerHTML = `<p class="meta">Running ${esc($("pkg").selectedOptions[0].text)}
-      under ${esc($("contract").value)} … this can take several seconds.</p>`;
+  const btn = $("run");
+  btn.disabled = true;
+  v.innerHTML = `<p class="meta">⟳ Isolating workload and installing audit hooks —
+     verifying <code>${esc($("pkg").selectedOptions[0].text)}</code> under
+     <code>${esc($("contract").value)}</code> …</p>`;
   try {
     const r = await api("/verify", { method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ package: $("pkg").value, contract: $("contract").value }) });
     const cov = (r.coverage * 100).toFixed(1);
     v.innerHTML = verdictBanner(r.verdict, r.reason,
-      `${r.events_count} events · ${r.findings_count} findings · coverage ${cov}% ·
-       attribution ${r.attribution} · ${r.duration_s}s · run <code>${r.run_id.slice(0,12)}</code>`);
+      `<span class="mono">${esc(r.run_id.slice(0,12))}</span> · ${r.events_count} events ·
+       ${r.findings_count} findings · coverage ${cov}% · attribution ${r.attribution} ·
+       ${r.duration_s}s`);
+    v.innerHTML += `<div class="card-grid" style="margin:1rem 0">
+      <div class="stat"><div class="n">${r.events_count}</div><div class="l">Events</div></div>
+      <div class="stat"><div class="n">${cov}%</div><div class="l">Coverage</div></div>
+      <div class="stat"><div class="n">${r.findings_count}</div><div class="l">Findings</div></div>
+      <div class="stat"><div class="n">${r.duration_s}s</div><div class="l">Duration</div></div>
+    </div>`;
     const evs = r.events.map(e =>
       `<tr><td><span class="cap ${e.capability === "violation" ? "V" : ""}">${esc(e.capability)}</span></td>
        <td><code>${esc(e.action)}</code></td><td><code>${esc(e.resource)}</code></td>
        <td><code>${esc(e.destination)}</code></td><td>${esc(e.phase)}</td></tr>`).join("");
-    v.innerHTML += `<h4>Observed events (${r.events_count})</h4>
-      <table><thead><tr><th>capability</th><th>action</th><th>resource</th>
-      <th>destination</th><th>phase</th></tr></thead><tbody>${evs}</tbody></table>`;
+    v.innerHTML += `<h3>Observed events (${r.events_count})</h3>
+      <div class="scroll"><table style="margin-top:0"><thead><tr><th>capability</th><th>action</th>
+      <th>resource</th><th>destination</th><th>phase</th></tr></thead><tbody>${evs}</tbody></table></div>`;
     const fs = r.findings.map(f =>
-      `<div class="cap V">${esc(f.severity)}</div> <strong>${esc(f.capability)}</strong>
+      `<span class="cap V">${esc(f.severity)}</span> <strong>${esc(f.capability)}</strong>
        — ${esc(f.reason)}`).join("<br>");
-    if (r.findings.length) v.innerHTML += `<h4>Findings</h4>${fs}`;
+    if (r.findings.length) v.innerHTML += `<h3>Findings</h3>${fs}`;
   } catch (e) {
     v.innerHTML = `<p class="err">${esc(e.message)}</p>`;
-  }
+  } finally { btn.disabled = false; }
 });
 
 /* --- Contracts --- */
@@ -171,7 +328,7 @@ $("cnew").addEventListener("click", () => {
   editing = null;
   $("cyaml").value = "package_id: \"new-pkg\"\nversion_family: \"1.x\"\n"
     + "environment:\n  os: \"darwin\"\ncapability_rules: []\ncoverage_threshold: 0.8\n";
-  $("cmsg").textContent = "New contract — set the name with Save (name field below).";
+  $("cmsg").textContent = "New contract — Save prompts for a name.";
 });
 $("csave").addEventListener("click", async () => {
   const name = prompt("Contract name (no spaces):", editing || "my-contract");
@@ -180,7 +337,7 @@ $("csave").addEventListener("click", async () => {
     await api("/contracts", { method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, yaml: $("cyaml").value }) });
-    $("cmsg").textContent = `Saved ${name}.`;
+    $("cmsg").textContent = "Saved " + name + ".";
     refreshContractList();
   } catch (e) { $("cmsg").textContent = "Error: " + e.message; }
 });
@@ -193,29 +350,30 @@ $("cdel").addEventListener("click", async () => {
 /* --- Runs --- */
 async function refreshRuns() {
   const runs = await api("/runs");
+  const cls = { "COMPLIANT": "good", "VIOLATION": "bad", "INCONCLUSIVE": "bad" };
   $("runstable").querySelector("tbody").innerHTML = runs.map(r => {
-    const c = VCOLOR[r.final_verdict] || "#555";
-    return `<tr><td style="color:${c};font-weight:bold">${esc(r.final_verdict)}</td>
+    const c = VCOLOR[r.final_verdict] || "#fff";
+    return `<tr><td style="color:${c};font-weight:700">
+      <span class="badge ${cls[r.final_verdict] || "good"}">${esc(r.final_verdict)}</span></td>
       <td>${esc(r.package_id)}</td><td><code>${esc(r.run_id.slice(0,12))}</code></td>
-      <td>${esc(r.timestamp)}</td></tr>`;
+      <td class="muted">${esc(r.timestamp)}</td></tr>`;
   }).join("");
 }
 
 /* --- Stress --- */
 function tableFrom(list, cols) {
-  return `<table><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead><tbody>
-    ${list.map(r => `<tr>${cols.map(c => `<td>${esc(r[c])}</td>`).join("")}</tr>`).join("")}
+  return `<table style="margin-top:0"><thead><tr>${cols.map(c => `<th>${c}</th>`).join("")}</tr></thead>
+    <tbody>${list.map(r => `<tr>${cols.map(c => `<td>${esc(r[c])}</td>`).join("")}</tr>`).join("")}
     </tbody></table>`;
 }
 async function refreshStress() {
   const s = await api("/stress");
-  let prog = s["progressive_stress.json"] || [];
-  let cal = s["calibrate_100.json"] || [];
-  const engineRows = prog.filter(r => !r.kind);
-  const e2eRows = prog.filter(r => r.kind === "e2e");
-  $("stressprog").innerHTML =
-    (engineRows.length ? tableFrom(engineRows, ["n_caps","n_events","clean_ok","poison_ok","clean_s","poison_s","rss_mb"]) : "") +
-    (e2eRows.length ? tableFrom(e2eRows, ["n_events","poison","verdict","observed","duration_s"]) : "");
+  const prog = s["progressive_stress.json"] || [];
+  const cal = s["calibrate_100.json"] || [];
+  $("stressprog").innerHTML = tableFrom(prog.filter(r => !r.kind),
+    ["n_caps","n_events","clean_ok","poison_ok","clean_s","poison_s","rss_mb"])
+    + tableFrom(prog.filter(r => r.kind === "e2e"),
+      ["n_events","poison","verdict","observed","duration_s"]);
   const calRows = cal.results || [];
   $("stresscal").innerHTML = calRows.length
     ? tableFrom(calRows, ["id","expected","got","cov","pass"])
@@ -226,7 +384,8 @@ refreshHealth();
 refreshSelections();
 async function refreshHealth() {
   try { const h = await api("/health"); $("health").textContent =
-    `API healthy · ${h.contracts} contracts on disk`; } catch (e) {}
+    `● API healthy · ${h.contracts} contracts`; }
+  catch (e) { $("health").textContent = "○ API offline"; }
 }
 </script>
 </body>
