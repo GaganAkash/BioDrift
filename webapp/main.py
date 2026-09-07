@@ -371,8 +371,8 @@ def list_runs(request: Request) -> list[dict]:
                 "final_verdict": r.final_verdict,
                 "timestamp": r.timestamp.isoformat() if r.timestamp else None,
             }
-            for r in runs[-50:]
-        ][::-1]
+            for r in runs[:50]
+        ]
 
 
 @app.get("/api/stress")

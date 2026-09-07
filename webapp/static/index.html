@@ -161,6 +161,14 @@
            font-weight: 600; background: rgba(255,255,255,0.1); }
   .badge.good { background: rgba(126,240,200,0.16); color: var(--accent); }
   .badge.bad { background: rgba(255,92,92,0.16); color: var(--danger); }
+  tr.new { animation: fadein 1.6s ease; }
+  @keyframes fadein { from { background: rgba(126,240,200,0.20); } to { background: transparent; } }
+  #livepulse { display: flex; align-items: center; gap: .4rem; color: var(--ink-dim); font-size: .8rem; }
+  #livepulse::before { content: ""; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--accent); box-shadow: 0 0 8px var(--accent); animation: pulse 2s ease infinite; }
+  #livepulse.paused { color: var(--warn); }
+  #livepulse.paused::before { background: var(--warn); box-shadow: 0 0 8px var(--warn); }
+  @keyframes pulse { 50% { opacity: .35; } }
   .card-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px,1fr)); gap: .7rem; }
   .stat { padding: .9rem 1rem; border-radius: 12px; background: var(--glass-high);
           border: 1px solid var(--glass-border); }
@@ -188,6 +196,8 @@
       </div>
     </div>
     <div id="health" class="glass" style="padding:.5rem .9rem"></div>
+    <div id="livepulse" class="glass" style="padding:.5rem .9rem"
+         title="Dashboard poll cadence">● live</div>
   </header>
 
   <nav class="tabs glass">
@@ -207,6 +217,10 @@
       <label>Package <select id="pkg" class="glass"></select></label>
       <label>Contract <select id="contract" class="glass"></select></label>
       <button id="run" style="align-self:flex-end">Run verification</button>
+      <label style="flex-direction:row;align-items:center;gap:.5rem"
+             title="Runs the selected package/contract every 8s to keep the dashboard breathing">
+        <input type="checkbox" id="drill"> Auto-drill (live)
+      </label>
     </div>
     <div id="vresult"></div>
   </div>
@@ -432,18 +446,70 @@ $("cdel").addEventListener("click", async () => {
   refreshContractList();
 });
 
-/* --- Runs --- */
+/* --- Runs (polled live) --- */
+const seenRuns = new Set();
+let lastPoll = new Date();
 async function refreshRuns() {
   const runs = await api("/runs");
   const cls = { "COMPLIANT": "good", "VIOLATION": "bad", "INCONCLUSIVE": "bad" };
-  $("runstable").querySelector("tbody").innerHTML = runs.map(r => {
+  const tbody = $("runstable").querySelector("tbody");
+  const scrollAtBottom = tbody.parentElement.scrollTop + tbody.parentElement.clientHeight
+    >= tbody.parentElement.scrollHeight - 8;
+  tbody.innerHTML = runs.map(r => {
     const c = VCOLOR[r.final_verdict] || "#fff";
-    return `<tr><td style="color:${c};font-weight:700">
+    const isNew = !seenRuns.has(r.run_id) && seenRuns.size > 0;
+    seenRuns.add(r.run_id);
+    return `<tr class="${isNew ? "new" : ""}"><td style="color:${c};font-weight:700">
       <span class="badge ${cls[r.final_verdict] || "good"}">${esc(r.final_verdict)}</span></td>
       <td>${esc(r.package_id)}</td><td><code>${esc(r.run_id.slice(0,12))}</code></td>
       <td class="muted">${esc(r.timestamp)}</td></tr>`;
   }).join("");
+  if (scrollAtBottom) tbody.parentElement.scrollTop = tbody.parentElement.scrollHeight;
 }
+
+/* --- Live: poll runs + charts + health every 4s, auto-drill toggle --- */
+let drillTimer = null;
+let drillBusy = false;
+async function tick() {
+  if (!document.hidden) {
+    try {
+      lastPoll = new Date();
+      await Promise.all([refreshRuns(), refreshCharts(), refreshHealth()]);
+      $("livepulse").title = "Last poll " + lastPoll.toLocaleTimeString();
+    } catch (e) { /* keep running on transient errors */ }
+  }
+}
+async function runDrill() {
+  if (drillBusy) return;
+  drillBusy = true;
+  try {
+    const pkg = $("drill").checked ? $("pkg").value : "";
+    if (!pkg) return;
+    const r = await api("/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ package: pkg, contract: $("contract").value }),
+    });
+    $("vresult").innerHTML = verdictBanner(r.verdict, r.reason,
+      `${r.events} events · ${(r.duration || r.dur || 0).toFixed(2)}s`);
+  } catch (e) {
+    $("vresult").innerHTML = `<p class="err">Drill: ${esc(e.message)}</p>`;
+  } finally { drillBusy = false; }
+}
+$("drill").addEventListener("change", () => {
+  $("run").disabled = $("drill").checked;
+  $("run").style.opacity = $("drill").checked ? 0.4 : 1;
+  clearInterval(drillTimer);
+  if ($("drill").checked) {
+    drillTimer = setInterval(runDrill, 8000);
+    runDrill();
+    $("livepulse").classList.remove("paused");
+  } else {
+    $("livepulse").classList.add("paused");
+  }
+});
+setInterval(tick, 4000);
+tick();
 
 /* --- Stress --- */
 function tableFrom(list, cols) {
@@ -558,11 +624,7 @@ async function refreshCharts() {
     .filter(v => counts[v])
     .map(v => ({ label: v, value: counts[v], color: VCOLOR[v] }));
   const dc = $('chart-donut');
-  const dpr = window.devicePixelRatio || 1;
-  dc.width = dc.parentElement.clientWidth * dpr;
-  dc.height = 240 * dpr;
-  dc.style.width = '100%'; dc.style.height = '240px';
-  dc.getContext('2d').scale(dpr, dpr);
+  if (dc.parentElement.clientWidth < 50) return; // tab hidden — redraw on open
   dc.width = dc.parentElement.clientWidth; dc.height = 240;
   drawDonut(dc, donutData);
   const prog = (stress['progressive_stress.json'] || []).filter(r => !r.kind);
