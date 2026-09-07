@@ -278,3 +278,24 @@ class TestReports:
 
     def test_bad_format_rejected(self, client):
         assert client.get("/api/reports/incidents?format=xml").status_code == 400
+
+
+class TestDeviceContracts:
+    def test_baseline_contract_for_every_device_package(self, client):
+        pkgs = client.get("/api/packages").json()
+        by_name = {c["name"]: c for c in client.get("/api/contracts").json()}
+        assert pkgs
+        for pkg in pkgs:
+            c = by_name.get("auto_" + pkg["name"].replace("/", "_"))
+            assert c and c["baseline"], f"missing baseline for {pkg['name']}"
+
+    def test_baseline_contract_yaml_served(self, client):
+        bases = [c for c in client.get("/api/contracts").json() if c.get("baseline")]
+        assert bases
+        r = client.get("/api/contracts/" + bases[0]["name"])
+        assert r.status_code == 200
+        assert "package_id" in r.text and "coverage_threshold" in r.text
+
+    def test_calibration_scenarios_excluded_from_device_library(self, client):
+        names = [c["name"] for c in client.get("/api/contracts").json()]
+        assert names and not any(n.startswith("_") for n in names)

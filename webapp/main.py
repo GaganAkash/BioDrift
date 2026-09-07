@@ -13,6 +13,7 @@ import csv
 import io
 import json
 import os
+import platform
 import re
 import sys
 import time
@@ -111,6 +112,122 @@ def _contract_path(name: str) -> Path:
     return CONTRACTS_DIR / f"{_safe_name(name)}.yaml"
 
 
+# --- Device-aware contract library -------------------------------------------
+# A contract lives on a device if its declared environment matches the host
+# (os/architecture, "*" = any). Contracts with no environment block are
+# universal. Engine calibration scenarios (_cal_*) are not device contracts.
+HOST_OS = platform.system().lower()
+HOST_ARCH = platform.machine().lower()
+HOST_ARCH = {"aarch64": "arm64", "amd64": "x86_64"}.get(HOST_ARCH, HOST_ARCH)
+AUTO_DIR = REPO / "results" / "_auto_contracts"
+
+
+def _contract_raw(text: str) -> dict:
+    import yaml
+
+    try:
+        return yaml.safe_load(text) or {}
+    except Exception:
+        return {}
+
+
+def _matches_host(raw: dict) -> bool:
+    env = raw.get("environment")
+    if not env:
+        return True
+    os_ = str(env.get("os", "*")).lower()
+    arch = str(env.get("architecture", "*")).lower()
+    return os_ in (HOST_OS, "*") and arch in (HOST_ARCH, "*")
+
+
+def _authored_contract_paths() -> list[Path]:
+    return [p for p in CONTRACTS_DIR.glob("*.yaml") if not p.stem.startswith("_")]
+
+
+def _baseline_name(pkg: str) -> str:
+    return "auto_" + pkg.replace("/", "_")
+
+
+def _baseline_yaml(pkg: str) -> str:
+    return (
+        f'package_id: "{pkg}"\n'
+        f'version_family: "0.0.0-auto"\n'
+        f"environment:\n  os: \"{HOST_OS}\"\n  architecture: \"{HOST_ARCH}\"\n"
+        "capability_rules: []\n"
+        "coverage_threshold: 0.0\n"
+    )
+
+
+def _baseline_contracts() -> list[dict]:
+    """One permissive baseline contract for every package found on this device
+    that has no authored contract matching it yet."""
+    authored_ids = {
+        _contract_raw(p.read_text()).get("package_id")
+        for p in _authored_contract_paths()
+    }
+    return [
+        {
+            "name": _baseline_name(pkg["name"]),
+            "package_id": pkg["name"],
+            "path": pkg["path"],
+            "admission_status": "pending",
+            "n_rules": 0,
+            "lines": 0,
+            "baseline": True,
+        }
+        for pkg in list_packages()
+        if pkg["name"] not in authored_ids
+    ]
+
+
+def _authored_contract_entries() -> list[dict]:
+    out = []
+    for p in _authored_contract_paths():
+        raw = _contract_raw(p.read_text())
+        if not _matches_host(raw):
+            continue
+        try:
+            c = load_contract(p)
+            out.append({
+                "name": p.stem,
+                "package_id": c.package_id,
+                "admission_status": c.admission_status.value,
+                "n_rules": len(c.capability_rules),
+                "lines": len(p.read_text().splitlines()),
+            })
+        except Exception as e:
+            out.append({"name": p.stem, "error": str(e)[:120]})
+    return out
+
+
+def device_contracts() -> list[dict]:
+    return _authored_contract_entries() + _baseline_contracts()
+
+
+def _resolve_contract_path(name: str, package: str = "") -> Path:
+    p = _contract_path(name)
+    if p.exists():
+        return p
+    baselines = _baseline_contracts()
+    match = next((b for b in baselines if b["name"] == name), None)
+    if match:
+        f = AUTO_DIR.joinpath(f"{name}.yaml")
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(_baseline_yaml(match["package_id"]))
+        return f
+    raise HTTPException(400, f"no contract named {name}")
+
+
+def _resolve_contract_yaml(name: str) -> str:
+    p = _contract_path(name)
+    if p.exists():
+        return p.read_text()
+    for b in _baseline_contracts():
+        if b["name"] == name:
+            return _baseline_yaml(b["package_id"])
+    raise HTTPException(404, f"no contract named {name}")
+
+
 def _resolve_package(pkg: str) -> Path:
     """Resolve a package path, confining it to the fixtures catalog."""
     path = Path(pkg).resolve()
@@ -176,7 +293,7 @@ def logout(request: Request):
 
 @app.get("/api/health")
 def health() -> dict:
-    return {"status": "ok", "contracts": len(list(CONTRACTS_DIR.glob("*.yaml")))}
+    return {"status": "ok", "contracts": len(device_contracts())}
 
 
 def _run_to_dict(r) -> dict:
@@ -224,7 +341,7 @@ def overview(request: Request) -> dict:
         "verdicts": verdicts,
         "events_total": events_total,
         "findings_total": findings_total,
-        "contracts": len(list(CONTRACTS_DIR.glob("*.yaml"))),
+        "contracts": len(device_contracts()),
         "packages": len(list_packages()),
         "recent": recent,
         "stress": {
@@ -375,29 +492,13 @@ class ContractIn(BaseModel):
 
 @app.get("/api/contracts")
 def list_contracts() -> list[dict]:
-    out = []
-    for p in sorted(CONTRACTS_DIR.glob("*.yaml")):
-        try:
-            c = load_contract(p)
-            out.append({
-                "name": p.stem,
-                "package_id": c.package_id,
-                "admission_status": c.admission_status.value,
-                "n_rules": len(c.capability_rules),
-                "lines": len(p.read_text().splitlines()),
-            })
-        except Exception as e:
-            out.append({"name": p.stem, "error": str(e)[:120]})
-    return out
+    return device_contracts()
 
 
 @app.get("/api/contracts/{name}")
 def get_contract(name: str, request: Request) -> dict:
     _check_auth(request, "GET")
-    p = _contract_path(name)
-    if not p.exists():
-        raise HTTPException(404, f"no contract named {name}")
-    return {"name": name, "yaml": p.read_text()}
+    return {"name": name, "yaml": _resolve_contract_yaml(name)}
 
 
 @app.post("/api/contracts")
@@ -451,9 +552,7 @@ class VerifyIn(BaseModel):
 def verify(v: VerifyIn, request: Request) -> dict:
     _check_auth(request, "POST")
     pkg = _resolve_package(v.package)
-    contract = _contract_path(v.contract)
-    if not contract.exists():
-        raise HTTPException(400, f"no contract named {v.contract}")
+    contract = _resolve_contract_path(v.contract, v.package)
 
     start = time.monotonic()
     try:
@@ -524,9 +623,7 @@ async def verify_stream(v: VerifyStreamIn, request: Request) -> StreamingRespons
     """
     _check_auth(request, "POST")
     pkg = _resolve_package(v.package)
-    contract = _contract_path(v.contract)
-    if not contract.exists():
-        raise HTTPException(400, f"no contract named {v.contract}")
+    contract = _resolve_contract_path(v.contract, v.package)
 
     queue: asyncio.Queue = asyncio.Queue()
 
