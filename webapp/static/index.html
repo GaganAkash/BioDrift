@@ -174,9 +174,12 @@
   .pillbar i { display: block; height: 100%; background: var(--ok); }
   footer { margin-top: 2.4rem; text-align: center; color: var(--ink-dim); font-size: .76rem; }
   a { color: var(--info); }
+  #bgcode { position: fixed; inset: 0; z-index: 0; width: 100%; height: 100%;
+            pointer-events: none; opacity: .55; }
 </style>
 </head>
 <body>
+<canvas id="bgcode" aria-hidden="true"></canvas>
 
 <div class="wrap">
   <header>
@@ -805,6 +808,57 @@ async function refreshHealth() {
     `● API healthy · ${h.contracts} contracts`; }
   catch (e) { $("health").textContent = "○ API offline"; }
 }
+
+/* subtle drifting code/binary/equations — low opacity, stays behind the UI */
+(function () {
+  const cv = document.getElementById("bgcode");
+  if (!cv) return;
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  const ctx = cv.getContext("2d");
+  const DPR = Math.min(window.devicePixelRatio || 1, 2);
+  const TOKENS = ["def ", "const ", "fn ", "import ", "return ", "var ", "while ",
+    "func ", "λx. ", "∫∂x ", "Σ", "√n", "π", "=> ", "?? ", "::", "&&", "||", "// ",
+    "0101", "1010", "0x7f", "0b10", "{…}", "[…]", "SELECT", "WHERE"];
+  let cols = [], bot = 0, w = 60;
+  const pick = () => TOKENS[(Math.random() * TOKENS.length) | 0];
+  const tint = (s, a) => /^[01xXb\s]+$/.test(s.trim())
+    ? `rgba(63,185,80,${a})` : `rgba(88,166,255,${a})`;
+  function resize() {
+    cv.width = innerWidth * DPR; cv.height = innerHeight * DPR;
+    bot = cv.height;
+    ctx.font = `${11 * DPR}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
+    w = ctx.measureText("0910/0x").width;
+    const n = Math.max(8, Math.min(22, Math.floor(cv.width / (w * 1.9))));
+    cols = [];
+    for (let i = 0; i < n; i++) {
+      cols.push({ x: Math.random() * cv.width,
+                  y: Math.random() * bot - bot,
+                  s: (0.12 + Math.random() * 0.5) * DPR });
+    }
+  }
+  addEventListener("resize", resize); resize();
+  let last = 0;
+  function frame(t) {
+    if (!document.hidden) {
+      const dt = Math.min(50, (t - last) || 16) / 16;
+      ctx.clearRect(0, 0, cv.width, cv.height);
+      for (const c of cols) {
+        c.y += c.s * dt * 1.1;
+        if (c.y - 30 * DPR > bot) { c.y = -30 * DPR; c.x = Math.random() * cv.width; }
+        const a = Math.min(0.13, 0.03 + c.s * 0.14 / DPR).toFixed(3);
+        const glyphs = [[0], [14, 30], [26, 40]].filter(([o]) => c.y > o * DPR);
+        for (const [o] of glyphs) {
+          const tok = pick();
+          ctx.fillStyle = tint(tok, a);
+          ctx.fillText(tok, c.x, c.y - o * DPR);
+        }
+      }
+    }
+    last = t;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
 </script>
 </body>
 </html>
