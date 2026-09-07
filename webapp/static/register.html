@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>BioDrift · Sign in</title>
+<title>BioDrift · Create account</title>
 <style>
   :root {
     --accent: #7ef0c8;
@@ -60,8 +60,8 @@
     background: linear-gradient(160deg, var(--accent), var(--accent2));
   }
   .shield::after {
-    content: "✓"; position: absolute; inset: 0; display: grid; place-items: center;
-    color: #04130f; font-weight: 800; font-size: 1.3rem;
+    content: "✚"; position: absolute; inset: 0; display: grid; place-items: center;
+    color: #04130f; font-weight: 800; font-size: 1.4rem;
   }
   h1 { margin: 0 0 .2rem; font-size: 1.35rem; letter-spacing: .5px; }
   p.tag { margin: 0 0 1.6rem; color: var(--ink-dim); font-size: .85rem; }
@@ -83,10 +83,8 @@
     transition: transform .15s ease, box-shadow .2s ease;
   }
   button:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(126,240,200,0.35); }
-  .err {
-    margin: 1rem 0 0; color: #ff5c5c; font-size: .82rem;
-  }
-  .hint { margin: 1.4rem 0 0; color: var(--ink-dim); font-size: .75rem; }
+  .err { margin: 1rem 0 0; color: #ff5c5c; font-size: .82rem; }
+  .hint { margin: 1.4rem 0 0; color: var(--ink-dim); font-size: .78rem; }
   .hint a { color: var(--accent); text-decoration: none; }
 </style>
 </head>
@@ -94,23 +92,24 @@
 <div class="bg"></div>
 <div class="glass">
   <div class="shield"></div>
-  <h1>BioDrift</h1>
-  <p class="tag">Context-aware package vetting console</p>
-  <form method="post" action="/login">
+  <h1>Create account</h1>
+  <p class="tag">Self-service signup — you get a researcher role</p>
+  <form method="post" action="/register">
     <label>Username
-      <input name="username" autocomplete="username" required autofocus>
+      <input name="username" autocomplete="username" required autofocus pattern="[A-Za-z0-9_.\-]{2,32}">
     </label>
     <label>Password
-      <input name="password" type="password" autocomplete="current-password" required>
+      <input name="password" type="password" autocomplete="new-password" required minlength="8">
     </label>
-    <button type="submit">Sign in</button>
+    <button type="submit">Create account</button>
   </form>
-  <p class="err" id="err" style="display:none">Invalid credentials. Try again.</p>
-  <p class="hint">Default demo login: admin / biodrift</p>
-  <p class="hint">New here? <a href="/register">Create an account</a></p>
+  <p class="err" id="err" style="display:none"></p>
+  <p class="hint">Research access only — admins can promote your role.</p>
+  <p class="hint">Already have an account? <a href="/login">Sign in</a></p>
 </div>
 <script>
-  if (new URLSearchParams(location.search).has("error")) document.getElementById("err").style.display = "block";
+  const msg = new URLSearchParams(location.search).get("error");
+  if (msg) { const e = document.getElementById("err"); e.style.display = "block"; e.textContent = msg; }
 </script>
 </body>
 </html>

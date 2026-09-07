@@ -19,6 +19,7 @@ import time
 from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse, Response, StreamingResponse
@@ -60,7 +61,7 @@ app.mount("/static", StaticFiles(directory=Path(__file__).parent / "static"), na
 users = UserStore()
 
 # Landing page and auth pages are public; the console itself is behind login.
-_PUBLIC_PATHS = {"/", "/login", "/logout"}
+_PUBLIC_PATHS = {"/", "/login", "/register", "/logout"}
 
 
 @app.middleware("http")
@@ -147,6 +148,23 @@ def login(request: Request, username: str = Form(...), password: str = Form(...)
         request.session["role"] = u["role"]
         return RedirectResponse("/console", status_code=303)
     return RedirectResponse("/login?error=1", status_code=303)
+
+
+@app.get("/register")
+def register_page() -> FileResponse:
+    return FileResponse(Path(__file__).parent / "static" / "register.html")
+
+
+@app.post("/register")
+def register(request: Request, username: str = Form(...), password: str = Form(...)):
+    try:
+        users.register(username, password)
+    except ValueError as e:
+        return RedirectResponse(f"/register?error={quote(str(e))}", status_code=303)
+    request.session["authed"] = True
+    request.session["user"] = username
+    request.session["role"] = "researcher"
+    return RedirectResponse("/console", status_code=303)
 
 
 @app.get("/logout")

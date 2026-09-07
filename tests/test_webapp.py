@@ -112,6 +112,41 @@ class TestLoginGate:
         assert me["role"] == "admin"
 
 
+class TestRegistration:
+    def test_register_page_public(self, anon):
+        assert anon.get("/register").status_code == 200
+
+    def test_register_creates_researcher_and_autologs(self, anon):
+        r = anon.post("/register", data={"username": "newbie",
+                                         "password": "password123"},
+                      follow_redirects=False)
+        assert r.status_code == 303
+        assert r.headers["location"] == "/console"
+        assert anon.get("/api/me").json()["role"] == "researcher"
+        assert anon.get("/api/users").status_code == 403
+
+    def test_register_duplicate_rejected(self, anon):
+        anon.post("/register", data={"username": "newbie", "password": "password123"})
+        r = anon.post("/register", data={"username": "newbie", "password": "password123"},
+                      follow_redirects=False)
+        assert r.status_code == 303
+        assert r.headers["location"].startswith("/register?error=")
+
+    def test_register_reserved_username_rejected(self, anon):
+        r = anon.post("/register", data={"username": "admin", "password": "password123"},
+                      follow_redirects=False)
+        assert r.status_code == 303
+        assert r.headers["location"].startswith("/register?error=")
+
+    def test_registered_account_can_sign_in(self, anon):
+        anon.post("/register", data={"username": "newbie", "password": "password123"})
+        anon.get("/logout")
+        r = anon.post("/login", data={"username": "newbie", "password": "password123"},
+                      follow_redirects=False)
+        assert r.headers["location"] == "/console"
+        assert anon.get("/api/me").json()["username"] == "newbie"
+
+
 class TestTokenGate:
     def test_open_when_token_unset(self, client):
         assert _get(client, "/api/runs").status_code == 200

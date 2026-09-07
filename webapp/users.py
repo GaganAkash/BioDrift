@@ -82,6 +82,12 @@ class UserStore:
             for name, u in sorted(self._users.items())
         ]
 
+    def register(self, username: str, password: str) -> None:
+        """Self-service signup: always the least-privilege researcher role."""
+        if username in self._users:
+            raise ValueError("username already exists")
+        self.upsert(username, password, "researcher")
+
     def upsert(self, username: str, password: str, role: str) -> None:
         if not _USERNAME_RE.match(username):
             raise ValueError("username must be 2-32 chars: letters, digits, . _ -")
