@@ -20,6 +20,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+web = [
+    "fastapi>=0.110",
+    "uvicorn>=0.29",
+]
 dev = [
     "ruff>=0.4",
     "mypy>=1.10",

@@ -1,4 +1,4 @@
-.PHONY: install dev lint typecheck test fmt clean
+.PHONY: install dev web lint typecheck test test-cov clean
 
 install:
 	pip install -e .
@@ -6,11 +6,15 @@ install:
 dev:
 	pip install -e ".[dev,full]"
 
+web:
+	pip install -e ".[web]"
+	python -m uvicorn webapp.main:app --reload
+
 lint:
-	ruff check src tests
+	ruff check src tests webapp
 
 fmt:
-	ruff format src tests
+	ruff format src tests webapp
 
 typecheck:
 	mypy src/biodrift
