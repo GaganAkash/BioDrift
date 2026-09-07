@@ -1,4 +1,4 @@
-.PHONY: install dev web lint typecheck test test-cov clean
+.PHONY: install dev web lint typecheck test test-cov docker clean
 
 install:
 	pip install -e .
@@ -18,6 +18,10 @@ fmt:
 
 typecheck:
 	mypy src/biodrift
+
+docker:
+	docker build -t biodrift .
+	docker run --rm -p 8000:8000 -e BIODRIFT_API_TOKEN=dev biodrift
 
 test:
 	pytest

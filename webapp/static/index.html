@@ -267,47 +267,112 @@ function verdictBanner(v, reason, extra) {
     ${extra ? `<p class="meta">${extra}</p>` : ""}`;
 }
 
-/* --- Verify --- */
+/* --- Verify: live SSE telemetry + behavior chain --- */
 async function refreshSelections() {
   const [pkgs, contracts] = await Promise.all([api("/packages"), api("/contracts")]);
   $("pkg").innerHTML = pkgs.map(p => `<option value="${p.path}">${p.name}</option>`).join("");
   $("contract").innerHTML = contracts.map(c => `<option>${c.name}</option>`).join("");
 }
+
+function capColor(cap) {
+  if (cap === "violation" || cap === "file_delete") return "#ff5c5c";
+  if (/network/.test(cap)) return "#f0b45c";
+  if (/process|exec|shell|code/.test(cap)) return "#f19ce4";
+  if (/write/.test(cap)) return "#e78fc0";
+  return "#7ef0c8";
+}
+
+/* collapse the ordered events into a behavior chain: load -> act -> connect */
+function behaviorChain(events) {
+  if (!events.length) return '<p class="meta">No observable behavior.</p>';
+  const items = events.map((e, i) => {
+    const c = VCOLOR[e.capability === "violation" ? "VIOLATION"
+      : (/network/.test(e.capability) ? "INCONCLUSIVE" : "COMPLIANT")] || "#7ef0c8";
+    const name = e.capability.replace(/_/g, " ");
+    const target = e.destination || e.resource;
+    return `<div style="display:flex;align-items:center;gap:.5rem;margin:.3rem 0">
+      <span style="color:#557;font-size:.75rem;width:2.4rem">#${i + 1}</span>
+      <div style="flex:0 0 8px;height:34px;border-radius:4px;background:${c};box-shadow:0 0 10px ${c}55"></div>
+      <div><strong>${esc(name)}</strong> <span class="muted">${esc(e.action)}</span>
+        <div class="meta" style="font-size:.78rem">${esc(target)}</div></div>
+    </div>`;
+  }).join("");
+  return `<div style="background:var(--glass-high);border:1px solid var(--glass-border);border-radius:12px;padding:.8rem 1rem">${items}</div>`;
+}
+
 $("run").addEventListener("click", async () => {
   const v = $("vresult");
   const btn = $("run");
   btn.disabled = true;
-  v.innerHTML = `<p class="meta">⟳ Isolating workload and installing audit hooks —
-     verifying <code>${esc($("pkg").selectedOptions[0].text)}</code> under
-     <code>${esc($("contract").value)}</code> …</p>`;
+  const liveEvents = [];
+  const pkgName = $("pkg").selectedOptions[0].text;
+  const ctrName = $("contract").value;
+  v.innerHTML = `<p class="meta">⟳ Isolating workload and installing <code>sys.audit</code> hooks —
+     verifying <code>${esc(pkgName)}</code> under <code>${esc(ctrName)}</code> …</p>
+     <div id="livefeed" style="margin-top:.8rem"></div>`;
+  const feed = $("livefeed");
+  const feedItem = (e) => `<tr><td><span class="cap" style="background:${capColor(e.capability)}33;color:${capColor(e.capability)}">${esc(e.capability)}</span></td>
+      <td><code>${esc(e.action)}</code></td><td class="meta" style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${esc(e.destination || e.resource)}</td></tr>`;
+  const renderFeed = () => {
+    const rows = liveEvents.slice(-40).map(feedItem).join("");
+    feed.innerHTML = liveEvents.length
+      ? `<div class="scroll" style="max-height:240px"><table style="margin-top:0"><thead>
+           <tr><th>capability</th><th>action</th><th>target</th></tr></thead>
+           <tbody>${rows}</tbody></table></div>`
+      : `<p class="meta">Waiting for the subprocess to emit events…</p>`;
+  };
+
   try {
-    const r = await api("/verify", { method: "POST",
+    const resp = await fetch("/api/verify/stream", { method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ package: $("pkg").value, contract: $("contract").value }) });
+      body: JSON.stringify({ package: $("pkg").value, contract: ctrName }) });
+    if (!resp.ok || !resp.body) {
+      const err = await resp.json().catch(() => ({}));
+      throw new Error(err.detail || resp.statusText);
+    }
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = "";
+    let summary = null;
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+      const parts = buf.split("\n\n");
+      buf = parts.pop();
+      for (const chunk of parts) {
+        const evMatch = chunk.match(/^event: (\w+)\n/);
+        const dataMatch = chunk.match(/^data: (.+)$/m);
+        if (!evMatch || !dataMatch) continue;
+        const evName = evMatch[1];
+        const payload = JSON.parse(dataMatch[1]);
+        if (evName === "audit") {
+          liveEvents.push(payload);
+          renderFeed();
+        } else if (evName === "done") {
+          summary = payload;
+        }
+      }
+    }
+    const r = summary || {};
+    if (r.error) throw new Error(r.error);
     const cov = (r.coverage * 100).toFixed(1);
+    const runIdHint = liveEvents.length ? liveEvents[0].run_id.slice(0, 12) : "";
     v.innerHTML = verdictBanner(r.verdict, r.reason,
-      `<span class="mono">${esc(r.run_id.slice(0,12))}</span> · ${r.events_count} events ·
-       ${r.findings_count} findings · coverage ${cov}% · attribution ${r.attribution} ·
-       ${r.duration_s}s`);
+      `<span class="mono">${esc(runIdHint)}</span> · ${r.events} events ·
+       coverage ${cov}% · attribution ${r.attribution} · ${r.dur}s`);
     v.innerHTML += `<div class="card-grid" style="margin:1rem 0">
-      <div class="stat"><div class="n">${r.events_count}</div><div class="l">Events</div></div>
+      <div class="stat"><div class="n">${r.events}</div><div class="l">Events</div></div>
       <div class="stat"><div class="n">${cov}%</div><div class="l">Coverage</div></div>
-      <div class="stat"><div class="n">${r.findings_count}</div><div class="l">Findings</div></div>
-      <div class="stat"><div class="n">${r.duration_s}s</div><div class="l">Duration</div></div>
+      <div class="stat"><div class="n">${r.events ? (r.events/ (r.dur||1)).toFixed(0) : 0}</div><div class="l">Events/sec</div></div>
+      <div class="stat"><div class="n">${r.dur}s</div><div class="l">Duration</div></div>
     </div>`;
-    const evs = r.events.map(e =>
-      `<tr><td><span class="cap ${e.capability === "violation" ? "V" : ""}">${esc(e.capability)}</span></td>
-       <td><code>${esc(e.action)}</code></td><td><code>${esc(e.resource)}</code></td>
-       <td><code>${esc(e.destination)}</code></td><td>${esc(e.phase)}</td></tr>`).join("");
-    v.innerHTML += `<h3>Observed events (${r.events_count})</h3>
+    v.innerHTML += `<h3>Behavior chain</h3>${behaviorChain(liveEvents)}`;
+    v.innerHTML += `<h3>Observed events <span class="muted">(live stream)</span></h3>
       <div class="scroll"><table style="margin-top:0"><thead><tr><th>capability</th><th>action</th>
-      <th>resource</th><th>destination</th><th>phase</th></tr></thead><tbody>${evs}</tbody></table></div>`;
-    const fs = r.findings.map(f =>
-      `<span class="cap V">${esc(f.severity)}</span> <strong>${esc(f.capability)}</strong>
-       — ${esc(f.reason)}`).join("<br>");
-    if (r.findings.length) v.innerHTML += `<h3>Findings</h3>${fs}`;
+      <th>target</th></tr></thead><tbody>${liveEvents.map(feedItem).join("")}</tbody></table></div>`;
   } catch (e) {
-    v.innerHTML = `<p class="err">${esc(e.message)}</p>`;
+    v.innerHTML += `<p class="err">${esc(e.message)}</p>`;
   } finally { btn.disabled = false; }
 });
 

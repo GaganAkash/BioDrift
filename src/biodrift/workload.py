@@ -6,6 +6,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
 from biodrift.models import Event
@@ -36,8 +37,14 @@ def run_workload(
     timeout_s: float = 30.0,
     enable_audit: bool = True,
     enable_process: bool = True,
+    on_event: Callable[[dict], None] | None = None,
 ) -> WorkloadResult:
     """Execute the candidate package in an isolated subprocess and capture events.
+
+    ``on_event`` (when given) is a callback invoked for each normalized
+    event record as it is written to the audit log *during* the run, so a
+    streaming consumer (e.g. a web UI) can show live telemetry. If omitted,
+    events are returned only after the subprocess exits.
 
     ponytail: run target module via subprocess with PYTHONPATH isolation.
     Add per-scenario argument generation when fixture set grows.
@@ -65,20 +72,18 @@ def run_workload(
     modules = _all_importable_modules(sysroot, entry)
     cmd = [sys.executable, "-m", "biodrift._bootstrap", *modules]
 
+    proc: subprocess.Popen | None = None
     try:
-        proc = subprocess.run(
-            cmd,
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=timeout_s,
+        proc = subprocess.Popen(
+            cmd, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True
         )
-        exit_code = proc.returncode
-        stdout, stderr = proc.stdout, proc.stderr
+        exit_code, stdout, stderr = _pump(proc, log_path, run_id, package_id, on_event, timeout_s)
     except subprocess.TimeoutExpired as e:
         exit_code = -1
         stdout = e.stdout.decode() if isinstance(e.stdout, bytes) else str(e.stdout or "")
         stderr = e.stderr.decode() if isinstance(e.stderr, bytes) else str(e.stderr or "")
+        if proc is not None:
+            proc.kill()
 
     duration = time.monotonic() - start
 
@@ -92,6 +97,107 @@ def run_workload(
         stdout=stdout,
         stderr=stderr,
     )
+
+
+def _pump(
+    proc: subprocess.Popen,
+    log_path: Path,
+    run_id: str,
+    package_id: str,
+    on_event: Callable[[dict], None] | None,
+    timeout_s: float,
+) -> tuple[int, str, str]:
+    """Run the subprocess, streaming audit-log lines to ``on_event`` as they appear.
+
+    Because the child appends to ``log_path`` incrementally, we poll the log
+    and deliver each new line via the callback before the process finishes.
+    Output is captured text-only (no TTY), so lines are drained to avoid
+    a deadlocked pipe if the child writes a lot.
+
+    ponytail: poll-inotify pattern — assumes single-writer append log; a
+    blocking tail (queues.Queue + inotify) is overkill for our sizes.
+    """
+    import time as _t
+
+    chunks_out: list[str] = []
+    chunks_err: list[str] = []
+    seen = 0
+    deadline = _t.monotonic() + timeout_s
+
+    while proc.poll() is None:
+        if _t.monotonic() > deadline:
+            raise subprocess.TimeoutExpired(proc.args, timeout_s)
+        _drain(proc, chunks_out, chunks_err)
+        _stream_new_lines(log_path, run_id, package_id, on_event, seen)
+        seen = _count_lines(log_path)
+        _t.sleep(0.01)
+
+    _drain(proc, chunks_out, chunks_err)
+    _stream_new_lines(log_path, run_id, package_id, on_event, seen)
+    proc.wait()
+
+    return (
+        proc.returncode or 0,
+        "".join(chunks_out),
+        "".join(chunks_err),
+    )
+
+
+def _drain(proc, chunks_out: list[str], chunks_err: list[str]) -> None:
+    try:
+        while True:
+            line = proc.stdout.readline()
+            if not line:
+                break
+            chunks_out.append(line)
+    except Exception:
+        pass
+    try:
+        while True:
+            line = proc.stderr.readline()
+            if not line:
+                break
+            chunks_err.append(line)
+    except Exception:
+        pass
+
+
+def _count_lines(path: Path) -> int:
+    if not path.exists():
+        return 0
+    n = 0
+    with open(path) as f:
+        for _ in f:
+            n += 1
+    return n
+
+
+def _stream_new_lines(
+    log_path: Path,
+    run_id: str,
+    package_id: str,
+    on_event: Callable[[dict], None] | None,
+    start_line: int,
+) -> None:
+    if on_event is None or not log_path.exists():
+        return
+    import json as _json
+
+    with open(log_path) as f:
+        for idx, line in enumerate(f):
+            if idx < start_line:
+                continue
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                data = _json.loads(line)
+            except Exception:
+                continue
+            data.setdefault("run_id", run_id)
+            data.setdefault("package_id", package_id)
+            data.setdefault("observer", "python_audit")
+            on_event(data)
 
 
 def _find_entry_module(package_dir: Path, entry_module: str | None = None) -> tuple[str, Path]:

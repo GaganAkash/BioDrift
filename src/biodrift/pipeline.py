@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -49,6 +50,7 @@ def run_verification(
     scenario: str = "default",
     entry_module: str | None = None,
     persist: bool = True,
+    live: Callable[[dict], None] | None = None,
 ) -> PipelineResult:
     """Run the full BioDrift verification pipeline on a candidate package."""
     cfg = config or load_config()
@@ -78,6 +80,7 @@ def run_verification(
         entry_module=entry_module,
         enable_audit=True,
         enable_process=True,
+        on_event=live,
     )
 
     all_events = workload.events
