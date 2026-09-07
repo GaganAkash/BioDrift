@@ -490,8 +490,9 @@ async function runDrill() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ package: pkg, contract: $("contract").value }),
     });
+    const nEv = r.events_count ?? (Array.isArray(r.events) ? r.events.length : 0);
     $("vresult").innerHTML = verdictBanner(r.verdict, r.reason,
-      `${r.events} events · ${(r.duration || r.dur || 0).toFixed(2)}s`);
+      `${nEv} events · ${(r.duration_s ?? 0).toFixed(2)}s`);
   } catch (e) {
     $("vresult").innerHTML = `<p class="err">Drill: ${esc(e.message)}</p>`;
   } finally { drillBusy = false; }
