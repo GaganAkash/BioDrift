@@ -19,6 +19,7 @@ from pathlib import Path
 
 DEFAULT_FILE = Path(__file__).resolve().parent.parent / "config" / "users.json"
 _USERNAME_RE = re.compile(r"^[A-Za-z0-9_.\-]{2,32}$")
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
 ROLES = ("admin", "researcher")
 _ITERATIONS = 100_000
 
@@ -70,34 +71,43 @@ class UserStore:
 
     def get(self, username: str) -> dict | None:
         u = self._users.get(username)
-        return {"username": username, "role": u["role"]} if u else None
+        return {
+            "username": username,
+            "role": u["role"],
+            "email": u.get("email") or "",
+        } if u else None
 
     def list(self) -> list[dict]:
         return [
             {
                 "username": name,
                 "role": u["role"],
+                "email": u.get("email") or "",
                 "created_at": u.get("created_at"),
             }
             for name, u in sorted(self._users.items())
         ]
 
-    def register(self, username: str, password: str) -> None:
+    def register(self, username: str, password: str, email: str = "") -> None:
         """Self-service signup: always the least-privilege researcher role."""
         if username in self._users:
             raise ValueError("username already exists")
-        self.upsert(username, password, "researcher")
+        self.upsert(username, password, "researcher", email)
 
-    def upsert(self, username: str, password: str, role: str) -> None:
+    def upsert(self, username: str, password: str, role: str, email: str = "") -> None:
         if not _USERNAME_RE.match(username):
             raise ValueError("username must be 2-32 chars: letters, digits, . _ -")
         if role not in ROLES:
             raise ValueError(f"role must be one of {', '.join(ROLES)}")
         if len(password) < 8:
             raise ValueError("password must be at least 8 characters")
+        email = (email or "").strip().lower()
+        if email and not _EMAIL_RE.match(email):
+            raise ValueError("email must look like name@domain.tld")
         self._users[username] = {
             "password": _hash(password),
             "role": role,
+            "email": email,
             "created_at": self._users.get(username, {}).get("created_at")
             or _dt.datetime.now().isoformat(),
         }

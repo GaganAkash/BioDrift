@@ -146,6 +146,27 @@ class TestRegistration:
         assert r.headers["location"] == "/console"
         assert anon.get("/api/me").json()["username"] == "newbie"
 
+    def test_register_stores_email_normalized(self, anon):
+        anon.post("/register", data={"username": "mail1", "password": "password123",
+                                     "email": "  Foo@Example.COM "})
+        anon.get("/logout")
+        anon.post("/login", data=LOGIN, follow_redirects=False)
+        users = anon.get("/api/users").json()
+        assert [u for u in users if u["username"] == "mail1"][0]["email"] == "foo@example.com"
+
+    def test_register_rejects_invalid_email(self, anon):
+        r = anon.post("/register", data={"username": "mail2", "password": "password123",
+                                         "email": "not-an-email"},
+                      follow_redirects=False)
+        assert r.status_code == 303
+        assert "email" in r.headers["location"]
+        assert anon.get("/console", follow_redirects=False).status_code == 303
+
+    def test_admin_add_rejects_invalid_email(self, client):
+        r = client.post("/api/users", json={"username": "res1", "password": "password123",
+                                            "role": "researcher", "email": "oops@"})
+        assert r.status_code == 400
+
 
 class TestTokenGate:
     def test_open_when_token_unset(self, client):

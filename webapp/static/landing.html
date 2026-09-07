@@ -6,13 +6,17 @@
 <title>BioDrift — Context-aware package vetting</title>
 <style>
   :root {
-    --accent: #7ef0c8;
-    --accent2: #38bdf8;
-    --ink: #e8f6f0;
-    --ink-dim: #9fb8af;
-    --glass: rgba(12, 30, 26, 0.42);
-    --glass-border: rgba(255, 255, 255, 0.14);
-    --glass-high: rgba(255, 255, 255, 0.09);
+    --ok:      #3fb950;
+    --warn:    #d29922;
+    --bad:     #f85149;
+    --info:    #58a6ff;
+    --ink:     #e6edf3;
+    --ink-dim: #8b949e;
+    --bg:      #0a0e0d;
+    --panel:   #10161a;
+    --panel-2: #0c1114;
+    --line:    #222b31;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100%; }
@@ -20,85 +24,62 @@
     font-family: "SF Pro Display", system-ui, -apple-system, sans-serif;
     color: var(--ink);
     min-height: 100vh;
-    background:
-      radial-gradient(1200px 800px at 12% -10%, rgba(56,189,248,0.22), transparent 60%),
-      radial-gradient(1000px 700px at 100% 0%, rgba(126,240,200,0.18), transparent 55%),
-      radial-gradient(800px 600px at 80% 110%, rgba(120,80,255,0.20), transparent 60%),
-      linear-gradient(160deg, #04130f 0%, #061a15 45%, #051018 100%);
+    background: var(--bg);
+    background-image: radial-gradient(900px 500px at 50% -8%, rgba(63,185,80,0.05), transparent 60%);
     background-attachment: fixed;
     position: relative; overflow-x: hidden;
   }
-  .bg {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background-image:
-      linear-gradient(rgba(126,240,200,0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(126,240,200,0.05) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
-    -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
-  }
-  .orb {
-    position: fixed; border-radius: 50%; filter: blur(70px); opacity: .5; z-index: 0;
-    animation: drift 26s ease-in-out infinite alternate;
-  }
-  .orb.a { width: 420px; height: 420px; background: #0bd3a0; top: -8%; left: -6%; }
-  .orb.b { width: 500px; height: 500px; background: #2563eb; bottom: -12%; right: -8%; animation-delay: -8s; }
-  .orb.c { width: 300px; height: 300px; background: #7c3aed; top: 55%; left: 65%; animation-delay: -16s; }
-  @keyframes drift { to { transform: translate(70px,40px) scale(1.15); } }
   .wrap { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 4rem 1.2rem 3rem; }
 
   .glass {
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
-    border-radius: 18px;
-    backdrop-filter: blur(18px) saturate(150%);
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-    box-shadow: 0 8px 40px rgba(0,0,0,0.35), inset 0 1px 0 var(--glass-high);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset;
   }
   .hero { text-align: center; padding: 3rem 2rem 2.6rem; }
   .shield {
-    width: 64px; height: 72px; position: relative; margin: 0 auto 1.2rem;
-    filter: drop-shadow(0 0 18px rgba(126,240,200,0.5));
+    width: 52px; height: 58px; position: relative; margin: 0 auto 1.2rem;
+    filter: drop-shadow(0 0 14px rgba(63,185,80,0.3));
     animation: bob 4s ease-in-out infinite;
   }
   .shield::before {
     content: ""; position: absolute; inset: 0;
     clip-path: polygon(50% 0, 96% 14%, 90% 70%, 50% 100%, 10% 70%, 4% 14%);
-    background: linear-gradient(160deg, var(--accent), var(--accent2));
+    background: linear-gradient(160deg, var(--ok), var(--info));
   }
   .shield::after {
     content: "✓"; position: absolute; inset: 0; display: grid; place-items: center;
-    color: #04130f; font-weight: 800; font-size: 1.6rem;
+    color: #04130f; font-weight: 800; font-size: 1.3rem;
   }
   @keyframes bob { 50% { transform: translateY(-6px); } }
-  h1 { margin: 0; font-size: 2.4rem; letter-spacing: .5px; }
-  .tagline { color: var(--ink-dim); font-size: 1.05rem; margin: .6rem 0 0; }
+  h1 { margin: 0; font-size: 2.2rem; letter-spacing: .5px; font-family: var(--mono); }
+  .tagline { color: var(--ink-dim); font-size: 1rem; margin: .6rem 0 0; }
   .cta { display: flex; gap: .9rem; justify-content: center; margin-top: 1.8rem; flex-wrap: wrap; }
   button, a.btn {
-    display: inline-block; padding: .8rem 1.5rem; border: none; border-radius: 12px;
-    text-decoration: none; font-weight: 700; font-size: .98rem; color: #04130f;
-    background: linear-gradient(150deg, var(--accent), var(--accent2));
-    box-shadow: 0 4px 18px rgba(126,240,200,0.28); cursor: pointer;
-    transition: transform .12s ease, box-shadow .2s ease;
+    display: inline-block; padding: .7rem 1.3rem; border: none; border-radius: 8px;
+    text-decoration: none; font-weight: 600; font-size: .9rem; color: #04130f;
+    background: var(--ok); box-shadow: 0 0 0 1px rgba(63,185,80,0.35); cursor: pointer;
+    transition: filter .12s ease;
   }
-  button:hover, a.btn:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(126,240,200,0.4); }
-  a.ghost { background: rgba(255,255,255,0.1); color: var(--ink); box-shadow: none; border: 1px solid var(--glass-border); }
+  button:hover, a.btn:hover { filter: brightness(1.1); }
+  a.ghost { background: var(--panel-2); color: var(--ink); box-shadow: none; border: 1px solid var(--line); }
 
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px,1fr)); gap: 1rem; margin-top: 1.6rem; }
   .card { padding: 1.4rem 1.4rem 1.2rem; }
-  .card h3 { margin: 0 0 .4rem; color: var(--accent2); font-size: .8rem; text-transform: uppercase; letter-spacing: 1.5px; }
-  .card p { margin: 0; color: var(--ink-dim); font-size: .92rem; line-height: 1.55; }
+  .card h3 { margin: 0 0 .4rem; color: var(--ink-dim); font-size: .72rem; text-transform: uppercase; letter-spacing: 1.6px; }
+  .card p { margin: 0; color: var(--ink-dim); font-size: .88rem; line-height: 1.55; }
+  .card code { font-family: var(--mono); font-size: .8rem; background: rgba(255,255,255,0.06); padding: .1rem .35rem; border-radius: 4px; color: var(--ink); }
 
   .steps { display: flex; gap: 1rem; margin-top: 1.6rem; flex-wrap: wrap; }
   .step { flex: 1; min-width: 230px; padding: 1.2rem 1.3rem; }
-  .step .num { color: var(--accent); font-weight: 800; font-size: 1.05rem; }
-  .step p { color: var(--ink-dim); font-size: .9rem; line-height: 1.5; margin: .3rem 0 0; }
-  .meta { color: var(--ink-dim); font-size: .82rem; text-align: center; margin-top: 2.4rem; }
+  .step .num { color: var(--ok); font-weight: 800; font-size: 1rem; font-family: var(--mono); }
+  .step p { color: var(--ink-dim); font-size: .88rem; line-height: 1.5; margin: .3rem 0 0; }
+  .meta { color: var(--ink-dim); font-size: .8rem; text-align: center; margin-top: 2.4rem; }
+  .meta a { color: var(--info); }
 </style>
 </head>
 <body>
-<div class="orb a"></div><div class="orb b"></div><div class="orb c"></div>
-<div class="bg"></div>
 
 <div class="wrap">
   <div class="hero glass">
@@ -140,7 +121,7 @@
       <p>Judge the audit trail against the rules: trust, reject, or ask for more coverage.</p></div>
   </div>
 
-  <p class="meta">BioDrift · context-aware package vetting · <a href="/login" style="color:var(--accent)">sign in</a></p>
+  <p class="meta">BioDrift · context-aware package vetting · <a href="/login">sign in</a></p>
 </div>
 </body>
 </html>

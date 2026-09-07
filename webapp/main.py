@@ -156,9 +156,10 @@ def register_page() -> FileResponse:
 
 
 @app.post("/register")
-def register(request: Request, username: str = Form(...), password: str = Form(...)):
+def register(request: Request, username: str = Form(...), password: str = Form(...),
+             email: str = Form("")):
     try:
-        users.register(username, password)
+        users.register(username, password, email)
     except ValueError as e:
         return RedirectResponse(f"/register?error={quote(str(e))}", status_code=303)
     request.session["authed"] = True
@@ -241,6 +242,7 @@ class UserIn(BaseModel):
     username: str
     password: str
     role: str = "researcher"
+    email: str = ""
 
 
 @app.get("/api/users")
@@ -253,7 +255,7 @@ def list_users(request: Request) -> list[dict]:
 def create_user(u: UserIn, request: Request) -> dict:
     _require_admin(request)
     try:
-        users.upsert(u.username, u.password, u.role)
+        users.upsert(u.username, u.password, u.role, u.email)
     except ValueError as e:
         raise HTTPException(400, str(e)) from None
     return {"ok": True, "username": u.username, "role": u.role}

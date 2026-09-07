@@ -6,13 +6,17 @@
 <title>BioDrift · Create account</title>
 <style>
   :root {
-    --accent: #7ef0c8;
-    --accent2: #38bdf8;
-    --ink: #e8f6f0;
-    --ink-dim: #9fb8af;
-    --glass: rgba(12, 30, 26, 0.42);
-    --glass-border: rgba(255, 255, 255, 0.14);
-    --glass-high: rgba(255, 255, 255, 0.09);
+    --ok:      #3fb950;
+    --warn:    #d29922;
+    --bad:     #f85149;
+    --info:    #58a6ff;
+    --ink:     #e6edf3;
+    --ink-dim: #8b949e;
+    --bg:      #0a0e0d;
+    --panel:   #10161a;
+    --panel-2: #0c1114;
+    --line:    #222b31;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100%; }
@@ -21,82 +25,69 @@
     color: var(--ink);
     min-height: 100vh;
     display: grid; place-items: center; padding: 1rem;
-    background:
-      radial-gradient(1200px 800px at 12% -10%, rgba(56,189,248,0.22), transparent 60%),
-      radial-gradient(1000px 700px at 100% 0%, rgba(126,240,200,0.18), transparent 55%),
-      radial-gradient(800px 600px at 80% 110%, rgba(120,80,255,0.20), transparent 60%),
-      linear-gradient(160deg, #04130f 0%, #061a15 45%, #051018 100%);
-    background-attachment: fixed;
+    background: var(--bg);
+    background-image: radial-gradient(700px 400px at 50% 0%, rgba(63,185,80,0.06), transparent 60%);
   }
-  .bg {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background-image:
-      linear-gradient(rgba(126,240,200,0.05) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(126,240,200,0.05) 1px, transparent 1px);
-    background-size: 44px 44px;
-    mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
-    -webkit-mask-image: radial-gradient(circle at 50% 40%, #000 0%, transparent 78%);
-  }
-  .glass {
-    position: relative; z-index: 1;
+  .card {
     width: 100%; max-width: 380px;
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
-    border-radius: 18px;
-    backdrop-filter: blur(18px) saturate(150%);
-    -webkit-backdrop-filter: blur(18px) saturate(150%);
-    box-shadow: 0 8px 40px rgba(0,0,0,0.35), inset 0 1px 0 var(--glass-high);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 12px;
     padding: 2.2rem 2rem 1.8rem;
     text-align: center;
   }
   .shield {
-    width: 54px; height: 60px; position: relative;
-    filter: drop-shadow(0 0 16px rgba(126,240,200,0.5));
+    width: 44px; height: 50px; position: relative;
+    filter: drop-shadow(0 0 12px rgba(63,185,80,0.3));
     margin: 0 auto 1rem;
   }
   .shield::before {
     content: ""; position: absolute; inset: 0;
     clip-path: polygon(50% 0, 96% 14%, 90% 70%, 50% 100%, 10% 70%, 4% 14%);
-    background: linear-gradient(160deg, var(--accent), var(--accent2));
+    background: linear-gradient(160deg, var(--ok), var(--info));
   }
   .shield::after {
     content: "✚"; position: absolute; inset: 0; display: grid; place-items: center;
-    color: #04130f; font-weight: 800; font-size: 1.4rem;
+    color: #04130f; font-weight: 800; font-size: 1.1rem;
   }
-  h1 { margin: 0 0 .2rem; font-size: 1.35rem; letter-spacing: .5px; }
-  p.tag { margin: 0 0 1.6rem; color: var(--ink-dim); font-size: .85rem; }
+  h1 { margin: 0 0 .2rem; font-size: 1.3rem; letter-spacing: .5px; font-family: var(--mono); }
+  p.tag { margin: 0 0 1.6rem; color: var(--ink-dim); font-size: .8rem; }
   form { display: flex; flex-direction: column; gap: 1rem; text-align: left; }
-  label { font-size: .8rem; color: var(--ink-dim); display: flex; flex-direction: column; gap: .35rem; }
+  label { font-size: .78rem; color: var(--ink-dim); display: flex; flex-direction: column; gap: .35rem; }
   input {
-    padding: .65rem .9rem;
-    border-radius: 10px; border: 1px solid var(--glass-border);
-    background: rgba(255,255,255,0.06);
-    color: var(--ink); font-size: .95rem; outline: none;
-    transition: border .2s ease, box-shadow .2s ease;
+    padding: .6rem .8rem;
+    border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel-2);
+    color: var(--ink); font-size: .92rem; outline: none;
+    transition: border .15s ease, box-shadow .15s ease;
   }
-  input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(126,240,200,0.15); }
+  input:focus { border-color: var(--ok); box-shadow: 0 0 0 2px rgba(63,185,80,0.15); }
   button {
-    margin-top: .4rem; padding: .75rem;
-    border: none; border-radius: 10px; cursor: pointer;
-    font-weight: 700; font-size: .95rem; color: #04130f;
-    background: linear-gradient(160deg, var(--accent), var(--accent2));
-    transition: transform .15s ease, box-shadow .2s ease;
+    margin-top: .4rem; padding: .65rem;
+    border: none; border-radius: 8px; cursor: pointer;
+    font-weight: 600; font-size: .9rem; color: #04130f;
+    background: var(--ok);
+    box-shadow: 0 0 0 1px rgba(63,185,80,0.35);
+    transition: filter .12s ease;
   }
-  button:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(126,240,200,0.35); }
-  .err { margin: 1rem 0 0; color: #ff5c5c; font-size: .82rem; }
-  .hint { margin: 1.4rem 0 0; color: var(--ink-dim); font-size: .78rem; }
-  .hint a { color: var(--accent); text-decoration: none; }
+  button:hover { filter: brightness(1.1); }
+  .err { margin: 1rem 0 0; color: var(--bad); font-size: .78rem; font-family: var(--mono); }
+  .muted { color: var(--ink-dim); }
+  .hint { margin: 1.3rem 0 0; color: var(--ink-dim); font-size: .76rem; }
+  .hint a { color: var(--info); text-decoration: none; }
 </style>
 </head>
 <body>
-<div class="bg"></div>
-<div class="glass">
+<div class="card">
   <div class="shield"></div>
   <h1>Create account</h1>
   <p class="tag">Self-service signup — you get a researcher role</p>
   <form method="post" action="/register">
     <label>Username
       <input name="username" autocomplete="username" required autofocus pattern="[A-Za-z0-9_.\-]{2,32}">
+    </label>
+    <label>Email <span class="muted">(optional)</span>
+      <input name="email" type="email" autocomplete="email" placeholder="name@domain.tld">
     </label>
     <label>Password
       <input name="password" type="password" autocomplete="new-password" required minlength="8">
