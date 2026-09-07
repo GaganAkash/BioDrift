@@ -114,27 +114,38 @@ def _pump(
     Output is captured text-only (no TTY), so lines are drained to avoid
     a deadlocked pipe if the child writes a lot.
 
-    ponytail: poll-inotify pattern — assumes single-writer append log; a
-    blocking tail (queues.Queue + inotify) is overkill for our sizes.
+    When ``on_event`` is None (the default for tests and the CLI) we do not
+    touch the log during the run — it is read once afterwards — so the common
+    path stays O(N) in event volume.
+
+    ponytail: poll pattern — assumes single-writer append log; a blocking
+    tail (queues.Queue + inotify) is overkill for our sizes.
     """
     import time as _t
 
     chunks_out: list[str] = []
     chunks_err: list[str] = []
-    seen = 0
     deadline = _t.monotonic() + timeout_s
 
-    while proc.poll() is None:
-        if _t.monotonic() > deadline:
-            raise subprocess.TimeoutExpired(proc.args, timeout_s)
-        _drain(proc, chunks_out, chunks_err)
-        _stream_new_lines(log_path, run_id, package_id, on_event, seen)
-        seen = _count_lines(log_path)
-        _t.sleep(0.01)
+    handle = open(log_path) if (on_event is not None and log_path.exists()) else None  # noqa: SIM115 (long-lived handle, closed in finally)
+    try:
+        while proc.poll() is None:
+            if _t.monotonic() > deadline:
+                raise subprocess.TimeoutExpired(proc.args, timeout_s)
+            _drain(proc, chunks_out, chunks_err)
+            if handle is None and on_event is not None and log_path.exists():
+                handle = open(log_path)  # noqa: SIM115 (long-lived handle, closed in finally)
+            if handle is not None:
+                _stream_handle(handle, run_id, package_id, on_event)
+            _t.sleep(0.01)
 
-    _drain(proc, chunks_out, chunks_err)
-    _stream_new_lines(log_path, run_id, package_id, on_event, seen)
-    proc.wait()
+        _drain(proc, chunks_out, chunks_err)
+        if handle is not None:
+            _stream_handle(handle, run_id, package_id, on_event)
+        proc.wait()
+    finally:
+        if handle is not None:
+            handle.close()
 
     return (
         proc.returncode or 0,
@@ -162,42 +173,33 @@ def _drain(proc, chunks_out: list[str], chunks_err: list[str]) -> None:
         pass
 
 
-def _count_lines(path: Path) -> int:
-    if not path.exists():
-        return 0
-    n = 0
-    with open(path) as f:
-        for _ in f:
-            n += 1
-    return n
-
-
-def _stream_new_lines(
-    log_path: Path,
+def _stream_handle(
+    f,
     run_id: str,
     package_id: str,
     on_event: Callable[[dict], None] | None,
-    start_line: int,
 ) -> None:
-    if on_event is None or not log_path.exists():
+    """Deliver the log lines appended since the last poll to ``on_event``.
+
+    Iterating an open handle continues from the current offset, so each poll
+    reads only the new lines — O(N) over the whole run, never O(N^2).
+    """
+    if on_event is None:
         return
     import json as _json
 
-    with open(log_path) as f:
-        for idx, line in enumerate(f):
-            if idx < start_line:
-                continue
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                data = _json.loads(line)
-            except Exception:
-                continue
-            data.setdefault("run_id", run_id)
-            data.setdefault("package_id", package_id)
-            data.setdefault("observer", "python_audit")
-            on_event(data)
+    for line in f:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            data = _json.loads(line)
+        except Exception:
+            continue
+        data.setdefault("run_id", run_id)
+        data.setdefault("package_id", package_id)
+        data.setdefault("observer", "python_audit")
+        on_event(data)
 
 
 def _find_entry_module(package_dir: Path, entry_module: str | None = None) -> tuple[str, Path]:
