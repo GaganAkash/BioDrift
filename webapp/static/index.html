@@ -828,7 +828,7 @@ async function refreshHealth() {
     bot = cv.height;
     ctx.font = `${11 * DPR}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
     w = ctx.measureText("0910/0x").width;
-    const n = Math.max(12, Math.min(40, Math.floor(cv.width / (w * 1.05))));
+    const n = Math.max(16, Math.min(60, Math.floor(cv.width / (w * 0.9))));
     cols = [];
     for (let i = 0; i < n; i++) {
       cols.push({ x: Math.random() * cv.width,
@@ -846,11 +846,12 @@ async function refreshHealth() {
         c.y += c.s * dt * 2.6;
         if (c.y - 30 * DPR > bot) { c.y = -30 * DPR; c.x = Math.random() * cv.width; }
         const a = Math.min(0.32, 0.12 + c.s * 0.3).toFixed(3);
-        const glyphs = [[0], [14, 30], [26, 40]].filter(([o]) => c.y > o * DPR);
-        for (const [o] of glyphs) {
-          const tok = pick();
-          ctx.fillStyle = tint(tok, a);
-          ctx.fillText(tok, c.x, c.y - o * DPR);
+        const step = 16 * DPR;
+        for (let o = 0; o < 5; o++) {
+          const gy = c.y - o * step;
+          if (gy < 0 || gy > bot + 40 * DPR) break;
+          ctx.fillStyle = tint(pick(), a);
+          ctx.fillText(pick(), c.x, gy);
         }
       }
     }
