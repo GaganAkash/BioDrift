@@ -819,21 +819,23 @@ async function refreshHealth() {
   const TOKENS = ["def ", "const ", "fn ", "import ", "return ", "var ", "while ",
     "func ", "λx. ", "∫∂x ", "Σ", "√n", "π", "=> ", "?? ", "::", "&&", "||", "// ",
     "0101", "1010", "0x7f", "0b10", "{…}", "[…]", "SELECT", "WHERE"];
-  let cols = [], bot = 0, w = 60;
-  const pick = () => TOKENS[(Math.random() * TOKENS.length) | 0];
   const tint = (s, a) => /^[01xXb\s]+$/.test(s.trim())
     ? `rgba(63,185,80,${a})` : `rgba(88,166,255,${a})`;
+  let parts = [];
   function resize() {
     cv.width = innerWidth * DPR; cv.height = innerHeight * DPR;
-    bot = cv.height;
     ctx.font = `${11 * DPR}px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace`;
-    w = ctx.measureText("0910/0x").width;
-    const n = Math.max(16, Math.min(60, Math.floor(cv.width / (w * 0.9))));
-    cols = [];
+    const n = Math.max(35, Math.min(110, Math.floor(cv.width / 26)));
+    parts = [];
     for (let i = 0; i < n; i++) {
-      cols.push({ x: Math.random() * cv.width,
-                  y: Math.random() * bot - bot,
-                  s: (0.12 + Math.random() * 0.5) * DPR });
+      parts.push({
+        x: Math.random() * cv.width,
+        y: Math.random() * cv.height,
+        vx: (Math.random() - 0.5) * 0.5 * DPR,
+        vy: (Math.random() - 0.5) * 0.5 * DPR,
+        a: 0.14 + Math.random() * 0.2,
+        ph: Math.random() * Math.PI * 2,
+      });
     }
   }
   addEventListener("resize", resize); resize();
@@ -842,17 +844,29 @@ async function refreshHealth() {
     if (!document.hidden) {
       const dt = Math.min(50, (t - last) || 16) / 16;
       ctx.clearRect(0, 0, cv.width, cv.height);
-      for (const c of cols) {
-        c.y += c.s * dt * 2.6;
-        if (c.y - 30 * DPR > bot) { c.y = -30 * DPR; c.x = Math.random() * cv.width; }
-        const a = Math.min(0.32, 0.12 + c.s * 0.3).toFixed(3);
-        const step = 16 * DPR;
-        for (let o = 0; o < 5; o++) {
-          const gy = c.y - o * step;
-          if (gy < 0 || gy > bot + 40 * DPR) break;
-          ctx.fillStyle = tint(pick(), a);
-          ctx.fillText(pick(), c.x, gy);
+      ctx.strokeStyle = "rgba(139,148,158,0.5)";
+      for (const p of parts) p.ph += 0.004 * dt;
+      const d2 = 120 * DPR, d22 = d2 * d2;
+      for (let i = 0; i < parts.length; i++) {
+        const p = parts[i];
+        p.x += p.vx * dt; p.y += p.vy * dt;
+        if (p.x < -40 * DPR) p.x += cv.width + 80 * DPR;
+        if (p.x > cv.width + 40 * DPR) p.x -= cv.width + 80 * DPR;
+        if (p.y < -40 * DPR) p.y += cv.height + 80 * DPR;
+        if (p.y > cv.height + 40 * DPR) p.y -= cv.height + 80 * DPR;
+        for (let j = i + 1; j < parts.length; j++) {
+          const q = parts[j], dx = p.x - q.x, dy = p.y - q.y, dd = dx * dx + dy * dy;
+          if (dd < d22) {
+            ctx.strokeStyle = `rgba(139,148,158,${((0.10 * (1 - dd / d22))).toFixed(3)})`;
+            ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+          }
         }
+      }
+      for (const p of parts) {
+        const pulse = 0.75 + 0.25 * Math.sin(p.ph);
+        const a = Math.min(0.34, p.a * pulse).toFixed(3);
+        ctx.fillStyle = tint(TOKENS[(Math.random() * TOKENS.length) | 0], a);
+        ctx.fillText(TOKENS[(Math.random() * TOKENS.length) | 0], p.x, p.y);
       }
     }
     last = t;
