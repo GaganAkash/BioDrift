@@ -843,7 +843,7 @@ async function refreshHealth() {
       const dt = Math.min(50, (t - last) || 16) / 16;
       ctx.clearRect(0, 0, cv.width, cv.height);
       for (const c of cols) {
-        c.y += c.s * dt * 1.1;
+        c.y += c.s * dt * 2.6;
         if (c.y - 30 * DPR > bot) { c.y = -30 * DPR; c.x = Math.random() * cv.width; }
         const a = Math.min(0.32, 0.12 + c.s * 0.3).toFixed(3);
         const glyphs = [[0], [14, 30], [26, 40]].filter(([o]) => c.y > o * DPR);
