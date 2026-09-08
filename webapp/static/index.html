@@ -691,7 +691,10 @@ async function refreshStress() {
 /* --- Charts (vanilla canvas, no dependency) --- */
 function drawDonut(el, data) {
   const ctx = el.getContext('2d');
-  const W = el.width, H = el.height, R = Math.min(W, H) / 2 - 28;
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, el.width / dpr, el.height / dpr);
+  const W = el.width / dpr, H = el.height / dpr, R = Math.min(W, H) / 2 - 28;
   const cx = W / 2, cy = H / 2 - 6;
   const total = data.reduce((s, d) => s + d.value, 0);
   if (!total) { ctx.fillStyle = '#8b949e'; ctx.font = '13px system-ui';
@@ -727,13 +730,22 @@ function drawDonut(el, data) {
 
 function drawLine(el, lines, xLabel, yLabel) {
   const ctx = el.getContext('2d');
-  const W = el.width, H = el.height;
+  const dpr = window.devicePixelRatio || 1;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, el.width / dpr, el.height / dpr);
+  const W = el.width / dpr, H = el.height / dpr;
   const p = { t: 24, r: 18, b: 40, l: 56 };
   const pw = W - p.l - p.r, ph = H - p.t - p.b;
   const allPts = lines.flatMap(l => l.pts);
+  if (!allPts.length) {
+    ctx.fillStyle = '#8b949e'; ctx.font = '13px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText('No stress data yet', p.l + pw / 2, p.t + ph / 2);
+    return;
+  }
   const xMax = Math.max(...allPts.map(q => q.x)) || 1;
   const yMax = Math.max(...allPts.map(q => q.y)) * 1.15 || 1;
-  const sx = x => p.l + (Math.log10(x) / Math.log10(xMax)) * pw;
+  const xLog = Math.log10(xMax);
+  const sx = x => p.l + ((x <= 0 ? 0 : Math.log10(x)) / (xLog || 1)) * pw;
   const sy = y => p.t + ph - (y / yMax) * ph;
   ctx.strokeStyle = '#30363d'; ctx.lineWidth = 1;
   ctx.beginPath(); ctx.moveTo(p.l, p.t); ctx.lineTo(p.l, p.t + ph);
@@ -785,7 +797,8 @@ async function refreshCharts() {
     .map(v => ({ label: v, value: counts[v], color: VCOLOR[v] }));
   const dc = $('chart-donut');
   if (dc.parentElement.clientWidth < 50) return; // tab hidden — redraw on open
-  dc.width = dc.parentElement.clientWidth; dc.height = 240;
+  const dpr = window.devicePixelRatio || 1;
+  dc.width = dc.parentElement.clientWidth * dpr; dc.height = 240 * dpr;
   drawDonut(dc, donutData);
   const prog = (stress['progressive_stress.json'] || []).filter(r => !r.kind);
   const caps = [...new Set(prog.map(r => r.n_caps))].sort((a, b) => a - b);
@@ -795,7 +808,7 @@ async function refreshCharts() {
     pts: prog.filter(r => r.n_caps === cap).map(r => ({ x: r.n_events, y: r.clean_s }))
   }));
   const sc = $('chart-stress');
-  sc.width = sc.parentElement.clientWidth; sc.height = 240;
+  sc.width = sc.parentElement.clientWidth * dpr; sc.height = 240 * dpr;
   drawLine(sc, lines, 'Events (subprocess)', 'Duration (s)');
 }
 
